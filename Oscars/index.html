@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard</title>
+    <!-- Styling for the dashboard -->
+    <style>
+      .dashboard {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+      }
+      .visualization {
+        padding: 10px;
+      }
+      .dashboard > :nth-child(1),
+      .dashboard > :nth-child(2),
+      .dashboard > :nth-child(3),
+      .dashboard > :nth-child(4) {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .button-container {
+        text-align: center;
+        margin-bottom: 5px;
+      }
+      .button-container button {
+        margin: 5px;
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+    </style>
+    <!-- Load the D3.js library for data visualization -->
+    <script src="https://d3js.org/d3.v7.js"></script>
+    <!-- Load JavaScript files for the dashboard -->
+    <script src="script.js"></script>
+    <script src="create.js"></script>
+    <script src="update.js"></script>
+    <script src="linked.js"></script>
+  </head>
+  <!-- Start the dashboard upon page load -->
+  <body onload="startDashboard()">
+    <!-- Buttons to update the data visualization -->
+    <div class="button-container">
+      <button onclick="updateIdioms('old')">Old Data</button>
+      <button onclick="updateIdioms('new')">New Data</button>
+      <button onclick="updateIdioms('all')">All Data</button>
+    </div>
+    <!-- The main grid layout of the dashboard -->
+    <div class="dashboard">
+      <!-- Visualization area for the bar chart -->
+      <div class="visualization" id="barChart"></div>
+      <!-- Visualization area for the scatter plot -->
+      <div class="visualization" id="scatterPlot"></div>
+      <!-- Visualization area for the line chart -->
+      <div class="visualization" id="lineChart"></div>
+      <!-- Visualization area for the fourth visualization (not specified in the code) -->
+      <div class="visualization" id="vis4"></div>
+    </div>
+  </body>
+</html>
