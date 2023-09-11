@@ -20,6 +20,7 @@ function startDashboard() {
       createBarChart(data);
       createScatterPlot(data);
       createLineChart(data);
+      createHistogram(data);
     })
     .catch((error) => {
       // If there's an error while loading the JSON data, log the error.
