@@ -20,7 +20,9 @@ function createBarChart(data) {
   // Create a color scale for the bars based on the budget data
   const colorScale = d3
     .scaleSequential(d3.interpolateBlues)
-    .domain([d3.min(data, (d) => d.budget), d3.max(data, (d) => d.budget)]);
+    .domain([d3.min(data, (d) => d.budget), d3.max(data, (d) => d.budget)])
+    // .range(["#f7fbff", "#08306b"]);
+    ;
 
   // Append and style the bars using the data and scales
   svg
@@ -253,40 +255,50 @@ function createHistogram(data) {
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-  // Create x and y scales for the bar chart
-  const xScale = d3
-    .scaleBand()
-    .domain(data.map((d) => d.oscar_year))
-    .range([width, 0])
-    .padding(1/3);
+    
+    // Create x and y scales for the bar chart
+    const xScale = d3
+      .scaleLinear()
+      .domain([0,d3.max(data, (d) => d.budget)])
+      .range([0, width])
+    // svg.append("g")
+    //   .attr("transform", "translate(0," + height + ")")
+    //   .call(d3.axisBottom(xScale));
+
+    // set the parameters for the histogram
+    var histogram = d3.histogram()
+    .value(function(d) { return d.budget; })
+    .domain(xScale.domain())
+    .thresholds(xScale.ticks(15));
+
+    // And apply this function to data to get the bins
+    var bins = histogram(data);
+
   const yScale = d3
     .scaleLinear()
-    .domain([0, d3.max(data, (d) => d.budget)])
+    // .domain([0, d3.max(data, (d) => d.budget)])
     .range([height, 0]);
 
-  // Create a color scale for the bars based on the budget data
-  const colorScale = d3
-    .scaleSequential(d3.interpolateBlues)
-    .domain([d3.min(data, (d) => d.budget), d3.max(data, (d) => d.budget)]);
+    yScale.domain([0, d3.max(bins, function(d) { return d.length; })]);   // d3.hist has to be called before the Y axis obviously
+    // svg.append("g")
+    // .call(d3.axisLeft(yScale));
 
   // Append and style the bars using the data and scales
   svg
-    .selectAll(".bar")
-    .data(data, (d) => d.title)
+    .selectAll(".rect")
+    .data(bins)
     .enter()
     .append("rect")
     .attr("class", "bar data")
-    .attr("x", (d) => xScale(d.oscar_year))
     
-    .attr("y", -height)
-    .attr("height", (d) => (height - yScale(d.budget)))
-    .attr("transform", `scale(1, -1)`)
+    .attr("x", (d) => xScale(d.budget))
     
-    .attr("width", xScale.bandwidth())
-    .attr("fill", (d) => colorScale(d.budget))
+    .attr("transform", function(d) { return "translate(" + xScale(d.x0) + "," + yScale(d.length) + ")"; })
+    .attr("width", function(d) { return xScale(d.x1) - xScale(d.x0) -1 ; })
+    .attr("height", function(d) { return height - yScale(d.length); })
+
+    .attr("fill", "steelblue")
     .attr("stroke", "black")
-    .on("mouseover", handleMouseOver)
-    .on("mouseout", handleMouseOut)
     .append("title")
     .text((d) => d.title);
 
@@ -295,7 +307,10 @@ function createHistogram(data) {
     .append("g")
     .attr("class", "x-axis")
     .attr("transform", `translate(0,${height})`)
-    .call(d3.axisBottom(xScale));
+    .call(d3.axisBottom(xScale))
+    
+    ;
+    
 
   svg
     .selectAll(".x-axis text")
@@ -308,7 +323,7 @@ function createHistogram(data) {
     .append("g")
     .attr("class", "y-axis")
     .call(d3.axisLeft(yScale)
-    .tickFormat((d) => d3.format(".1f")(d / 1000000) + "M")
+    // .tickFormat((d) => d3.format(".1f")(d / 1000000) + "M")
     .tickSizeOuter(0));
 
   // Append x and y axis labels
@@ -318,7 +333,7 @@ function createHistogram(data) {
     .attr("x", width / 2)
     .attr("y", height + margin.top + 30)
     .style("text-anchor", "middle")
-    .text("Oscar Year");
+    .text("Budget");
 
     svg
     .append("text")
@@ -327,6 +342,6 @@ function createHistogram(data) {
     .attr("y", -margin.left + 30)
     .style("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
-    .text("Budget");
+    .text("Frequency");
 
 }
