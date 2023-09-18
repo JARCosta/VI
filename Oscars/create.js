@@ -21,9 +21,9 @@ function createBarChart(data) {
   const colorScale = d3
     .scaleSequential(d3.interpolateBlues)
     .domain([d3.min(data, (d) => d.budget), d3.max(data, (d) => d.budget)])
-    // .range(["#f7fbff", "#08306b"]);
+    // .range(["#08306b", "#ffffff"]);
+    // .range(["#dddd00", "#08306b"]);
     ;
-
   // Append and style the bars using the data and scales
   svg
     .selectAll(".bar")
@@ -96,7 +96,12 @@ function createScatterPlot(data) {
       d3.max(data, (d) => d.oscar_year),
     ])
     .range([5, 15]);
-
+  const colorScale = d3
+    .scaleSequential(d3.interpolateBlues)
+    .domain([d3.min(data, (d) => d.oscar_year), d3.max(data, (d) => d.oscar_year)])
+    // .range(["#08306b", "#ffffff"]);
+    // .range(["#dddd00", "#08306b"]);
+    ;
   // Append and style circles using the data and scales
   svg
     .selectAll(".circle")
@@ -108,6 +113,7 @@ function createScatterPlot(data) {
     .attr("cy", (d) => yScale(d.rating))
     .attr("r", (d) => rScale(d.oscar_year))
     .attr("fill", "steelblue")
+    // .attr("fill", (d) => colorScale(d.oscar_year))
     .attr("stroke", "black")
     .on("mouseover", handleMouseOver)
     .on("mouseout", handleMouseOut)
@@ -175,6 +181,14 @@ function createLineChart(data) {
     .x((d) => xScale(d.oscar_year))
     .y((d) => yScale(d.budget));
 
+  const rScale = d3
+    .scaleLinear()
+    .domain([
+      d3.min(data, (d) => d.rating),
+      d3.max(data, (d) => d.rating),
+    ])
+    .range([5, 15]);
+
   // Append the line path to the chart
   svg
     .append("path")
@@ -195,6 +209,7 @@ function createLineChart(data) {
     .attr("cx", (d) => xScale(d.oscar_year))
     .attr("cy", (d) => yScale(d.budget))
     .attr("r", 5)
+    .attr("r", (d) => rScale(d.rating))
     .attr("fill", "steelblue")
     .attr("stroke", "black")
     .on("mouseover", handleMouseOver)
@@ -259,17 +274,18 @@ function createHistogram(data) {
     // Create x and y scales for the bar chart
     const xScale = d3
       .scaleLinear()
-      .domain([0,d3.max(data, (d) => d.budget)])
+      .domain([d3.min(data, (d) => d.rating),d3.max(data, (d) => d.rating)])
       .range([0, width])
     // svg.append("g")
     //   .attr("transform", "translate(0," + height + ")")
     //   .call(d3.axisBottom(xScale));
 
     // set the parameters for the histogram
+    
     var histogram = d3.histogram()
-    .value(function(d) { return d.budget; })
+    .value(function(d) { return d.rating; })
     .domain(xScale.domain())
-    .thresholds(xScale.ticks(15));
+    .thresholds(xScale.ticks(10));
 
     // And apply this function to data to get the bins
     var bins = histogram(data);
@@ -291,7 +307,7 @@ function createHistogram(data) {
     .append("rect")
     .attr("class", "bar data")
     
-    .attr("x", (d) => xScale(d.budget))
+    .attr("x", (d) => xScale(d.rating))
     
     .attr("transform", function(d) { return "translate(" + xScale(d.x0) + "," + yScale(d.length) + ")"; })
     .attr("width", function(d) { return xScale(d.x1) - xScale(d.x0) -1 ; })
