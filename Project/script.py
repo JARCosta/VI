@@ -109,6 +109,7 @@ def main():
                     df.drop(columns=['Code'], inplace=True)
                     df.rename(columns={'Entity': 'Country'}, inplace=True)
                     df.fillna(0, inplace=True)
+                    df['Total emissions'] = df.sum(axis=1, numeric_only=True)
                     dfs[1] = df
 
                 elif(i.startswith("4-")):
@@ -152,7 +153,7 @@ def main():
     merged["Country"] = merged["Country"].str.replace("Democratic Republic of Congo", "Dem. Rep. Congo")
 
     # merge with map data
-    with open("data.json", 'r') as f:
+    with open("map_data.json", 'r') as f:
         data = json.loads(f.read())
         els = [el["properties"]["name"] for el in data["objects"]["countries"]["geometries"]]
         new_df = pandas.DataFrame({"Country": els, "ID": range(els.__len__())})
@@ -164,7 +165,48 @@ def main():
     merged = merged[merged['Year'] < 2020]
     merged = merged[merged['Year'] > 2009]
 
-    # merged.to_csv("deths_and_emissions_by_country_and_year.csv", index=False)
+    merged = merged.drop('ID', axis=1)
+
+    years = {}
+    for value in merged.values:
+        try:
+            years[value[1]][0].append(value[3])
+            years[value[1]][1].append(value[-1])
+        except KeyError:
+            years[value[1]] = [[value[3]], [value[-1]]]
+
+    conclusion = []
+    for i in years:
+        conclusion.append({
+            "Country": "Mean",
+            "Year": i,
+            "Age: All Ages": round(np.mean(years[i][0]), 2),
+            "Total emissions": round(np.mean(years[i][1]), 2)
+        })
+        conclusion.append({
+            "Country": "Median",
+            "Year": i,
+            "Age: All Ages": round(np.median(years[i][0]), 2),
+            "Total emissions": round(np.median(years[i][1]), 2)
+        })
+        conclusion.append({
+            "Country": "Quantile_25%",
+            "Year": i,
+            "Age: All Ages": round(np.quantile(years[i][0], 0.25), 2),
+            "Total emissions": round(np.quantile(years[i][1], 0.25), 2)
+        })
+        conclusion.append({
+            "Country": "Quantile_75%",
+            "Year": i,
+            "Age: All Ages": round(np.quantile(years[i][0], 0.75), 2),
+            "Total emissions": round(np.quantile(years[i][1], 0.75), 2)
+        })
+    
+    merged = pandas.concat([merged, pandas.DataFrame(conclusion)], ignore_index=True)
+
+    # merged = merged.fillna(0)
+
+    merged.to_csv("deths_and_emissions_by_country_and_year.csv", index=False)
     merged.to_json("deths_and_emissions_by_country_and_year.json", orient='records', indent=4)
 
 main()
