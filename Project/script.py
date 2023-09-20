@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dfs = [None] * 2
+dfs = [None] * 3
 
 def main():
     ls = os.listdir()
@@ -108,7 +108,7 @@ def main():
                 elif(i.startswith("3-")):
                     df.drop(columns=['Code'], inplace=True)
                     df.rename(columns={'Entity': 'Country'}, inplace=True)
-                    df.fillna(0, inplace=True)
+                    # df.fillna(0, inplace=True)
                     df['Total emissions'] = df.sum(axis=1, numeric_only=True)
                     dfs[1] = df
 
@@ -124,9 +124,13 @@ def main():
                             }, inplace=True)
 
                 elif(i.startswith("5-")):
-                    df.drop(columns=['country_code', 'sub_region_name', 'intermediate_region', 'income_group', 'total_gdp_million', 'gdp_variation'], inplace=True)
-                    df.rename(columns={"year": "Year"}, inplace=True)
-
+                    df.drop(columns=['country_code', 'sub_region_name', 'intermediate_region', 'income_group', 'total_gdp_million', 'gdp_variation', 'region_name'], inplace=True)
+                    df.rename(columns={
+                        "year": "Year",
+                        "country_name": "Country",
+                        "total_gdp": "GDP",
+                        }, inplace=True)
+                    dfs[2] = df
 
                 # filter years
                 try:
@@ -151,6 +155,8 @@ def main():
     merged["Country"] = merged["Country"].str.replace("Cote d'Ivoire", "Côte d'Ivoire")
     merged["Country"] = merged["Country"].str.replace("Dominican Republic", "Dominican Rep.")
     merged["Country"] = merged["Country"].str.replace("Democratic Republic of Congo", "Dem. Rep. Congo")
+
+    merged = merged.merge(dfs[2], on=['Country', 'Year'], how='outer')
 
     # merge with map data
     with open("map_data.json", 'r') as f:
@@ -206,7 +212,7 @@ def main():
 
     # merged = merged.fillna(0)
 
-    merged.to_csv("deths_and_emissions_by_country_and_year.csv", index=False)
+    # merged.to_csv("deths_and_emissions_by_country_and_year.csv", index=False)
     merged.to_json("deths_and_emissions_by_country_and_year.json", orient='records', indent=4)
 
 main()
