@@ -13,8 +13,8 @@ def main():
     files = [
         '.gitignore',
         'script.py',
-        'deths_and_emissions_by_country_and_year.json',
-        'deths_and_emissions_by_country_and_year.csv',
+        'deaths_emissions_gdp.json',
+        'deaths_emissions_gdp.csv',
         'map_data.json',
         ]
 
@@ -212,8 +212,8 @@ def main():
 
     # merged = merged.fillna(0)
 
-    # merged.to_csv("deths_and_emissions_by_country_and_year.csv", index=False)
-    merged.to_json("deths_and_emissions_by_country_and_year.json", orient='records', indent=4)
+    # merged.to_csv("deaths_emissions_gdp.csv", index=False)
+    merged.to_json("deaths_emissions_gdp.json", orient='records', indent=4)
 
 main()
 
