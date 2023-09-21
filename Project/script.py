@@ -16,6 +16,7 @@ def main():
         'deaths_emissions_gdp.json',
         'deaths_emissions_gdp.csv',
         'map_data.json',
+        'temp.json',
         ]
 
     for i in files:
@@ -166,8 +167,12 @@ def main():
     merged = new_df.merge(merged, on='Country', how='outer')
     
     # remove info about countries not in the map and fill the rest with 0's
-    merged = merged.dropna(subset=['ID']).fillna(0)
+    merged = merged.dropna(subset=['ID'])
+    merged = merged.dropna(subset=['Year'])
+    merged = merged.fillna("..")
     
+    # merged.to_json("aaaa.json", orient='records', indent=4)
+
     merged = merged[merged['Year'] < 2020]
     merged = merged[merged['Year'] > 2009]
 
@@ -176,8 +181,10 @@ def main():
     years = {}
     for value in merged.values:
         try:
-            years[value[1]][0].append(value[3])
-            years[value[1]][1].append(value[-1])
+            if(value[3] != ".."):
+                years[value[1]][0].append(value[3])
+            if(value[-1] != ".."):
+                years[value[1]][1].append(value[-1])
         except KeyError:
             years[value[1]] = [[value[3]], [value[-1]]]
 
