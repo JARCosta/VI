@@ -178,47 +178,6 @@ def main():
 
     merged = merged.drop('ID', axis=1)
 
-    years = {}
-    for value in merged.values:
-        try:
-            if(value[3] != ".."):
-                years[value[1]][0].append(value[3])
-            if(value[-1] != ".."):
-                years[value[1]][1].append(value[-1])
-        except KeyError:
-            years[value[1]] = [[value[3]], [value[-1]]]
-
-    conclusion = []
-    for i in years:
-        conclusion.append({
-            "Country": "Mean",
-            "Year": i,
-            "Age: All Ages": round(np.mean(years[i][0]), 2),
-            "Total emissions": round(np.mean(years[i][1]), 2)
-        })
-        conclusion.append({
-            "Country": "Median",
-            "Year": i,
-            "Age: All Ages": round(np.median(years[i][0]), 2),
-            "Total emissions": round(np.median(years[i][1]), 2)
-        })
-        conclusion.append({
-            "Country": "Quantile_25%",
-            "Year": i,
-            "Age: All Ages": round(np.quantile(years[i][0], 0.25), 2),
-            "Total emissions": round(np.quantile(years[i][1], 0.25), 2)
-        })
-        conclusion.append({
-            "Country": "Quantile_75%",
-            "Year": i,
-            "Age: All Ages": round(np.quantile(years[i][0], 0.75), 2),
-            "Total emissions": round(np.quantile(years[i][1], 0.75), 2)
-        })
-    
-    merged = pandas.concat([merged, pandas.DataFrame(conclusion)], ignore_index=True)
-
-    # merged = merged.fillna(0)
-
     # merged.to_csv("deaths_emissions_gdp.csv", index=False)
     merged.to_json("deaths_emissions_gdp.json", orient='records', indent=4)
 
