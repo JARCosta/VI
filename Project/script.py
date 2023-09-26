@@ -5,8 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dfs = [None] * 3
-
+dfs = [None] * 4
 def main():
     ls = os.listdir()
 
@@ -49,49 +48,14 @@ def main():
                 # Specific changes for each dataset
 
                 if(i.startswith("1-")):
-                    df.drop(columns=[
-                        'AQI Category',
-                        'CO AQI Category',
-                        'Ozone AQI Category',
-                        'NO2 AQI Category',
-                        'PM2.5 AQI Category',
-                        ], inplace=True)
                     df.rename(columns={'\u00ef\u00bb\u00bfCountry': 'Country'}, inplace=True)
-                    
-                    # merge countries with multiple entries (cities)
-                    countries = {}
-                    for line in df.values:
-                        if line[0] not in countries and (str(line[0]) != "nan"):
-                            countries[line[0]] = {
-                                "Country": line[0],
-                                "AQI": line[2],
-                                "CO AQI": line[3],
-                                "Ozone AQI": line[4],
-                                "NO2 AQI": line[5],
-                                "PM2.5 AQI": line[6],
-                                "len": 1
-                            }
-                        elif str(line[0]) != "nan":
-                            countries[line[0]]["AQI"] += line[2]
-                            countries[line[0]]["CO AQI"] += line[3]
-                            countries[line[0]]["Ozone AQI"] += line[4]
-                            countries[line[0]]["NO2 AQI"] += line[5]
-                            countries[line[0]]["PM2.5 AQI"] += line[6]
-                            countries[line[0]]["len"] += 1
+                    df.dropna(subset=['Country'], inplace=True)
 
-                    for c in countries:
-                        countries[c]["AQI"] /= countries[c]["len"]
-                        countries[c]["CO AQI"] /= countries[c]["len"]
-                        countries[c]["Ozone AQI"] /= countries[c]["len"]
-                        countries[c]["NO2 AQI"] /= countries[c]["len"]
-                        countries[c]["PM2.5 AQI"] /= countries[c]["len"]
-                        countries[c].pop("len")
-                        for c2 in countries[c]:
-                            if(c2 != "Country"):
-                                countries[c][c2] = round(countries[c][c2], 2)
-                    
-                    df = pandas.DataFrame.from_dict(countries, orient='index')
-                    
+                    df = df.groupby('Country').mean(numeric_only=True).reset_index()
+                    df = df.round(2)
+                    df["Year"] = 2019
+                    dfs[3] = df
+                
                 elif(i.startswith("2-")):
                     df.drop(columns=['Code'], inplace=True)
                     df.rename(columns={
@@ -104,6 +68,8 @@ def main():
                         "Deaths - Chronic respiratory diseases - Sex: Both - Age: 70+ years (Rate)": "Age: 70+ years",
                         "Deaths - Chronic respiratory diseases - Sex: Both - Age: Age-standardized (Rate)": "Age: Age-standardized"
                         }, inplace=True)
+                    for i in list(df.head(0))[2:]:
+                        df[i] = df[i].apply(np.ceil)
                     dfs[0] = df
 
                 elif(i.startswith("3-")):
@@ -131,6 +97,7 @@ def main():
                         "country_name": "Country",
                         "total_gdp": "GDP",
                         }, inplace=True)
+                    df["GDP"] = df["GDP"].astype(int)
                     dfs[2] = df
 
                 # filter years
@@ -177,6 +144,11 @@ def main():
     merged = merged[merged['Year'] > 2009]
 
     merged = merged.drop('ID', axis=1)
+
+    merged["Year"] = merged["Year"].astype(int)
+
+    merged = merged.merge(dfs[3], on=['Country', 'Year'], how='outer')
+    merged = merged.fillna("..")
 
     # merged.to_csv("deaths_emissions_gdp.csv", index=False)
     merged.to_json("deaths_emissions_gdp.json", orient='records', indent=4)
