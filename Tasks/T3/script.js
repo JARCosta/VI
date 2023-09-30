@@ -48,6 +48,7 @@ function startDashboard() {
     // Call functions to create the choropleth map and scatter plot
     createChoroplethMap();
     createScatterPlot();
+    createClevelandDotPlot();
   });
 }
 
@@ -281,4 +282,146 @@ function createScatterPlot() {
     .style("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
     .text("Alcohol Consumption");
+}
+
+function createClevelandDotPlot() {
+  // Filter the data to remove entries with missing femaleemployrate, hivrate or internetuserate values
+  currentData = globalDataCapita.filter(function (d) {
+    return d.femaleemployrate != "" && d.hivrate != "" && d.internetuserate != "";
+  });
+
+  
+  // Create an SVG element to hold the scatter plot
+  const svg = d3
+    .select("#clevelandPlot")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height*4 + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // Create x and y scales for the scatter plot
+  const xScale_femaleemployrate = d3
+    .scaleLinear()
+    .domain([
+      d3.min(currentData, (d) => d.femaleemployrate),
+      d3.max(currentData, (d) => d.femaleemployrate),
+    ])
+    .range([0, width]);
+
+  const xScale_hivrate = d3
+    .scaleLinear()
+    .domain([
+      d3.min(currentData, (d) => d.hivrate),
+      d3.max(currentData, (d) => d.hivrate),
+    ])
+    .range([0, width]);
+
+  const xScale_internetuserate = d3
+    .scaleLinear()
+    .domain([
+      d3.min(currentData, (d) => d.internetuserate),
+      d3.max(currentData, (d) => d.internetuserate),
+    ])
+    .range([0, width]);
+
+
+  const yScale = d3
+    .scaleBand()
+    .domain(currentData.map((d) => d.country))
+    .range([0, height*4])
+    .padding(0.2);
+
+  // Lines
+  svg.selectAll("myline")
+    .data(currentData)
+    .enter()
+    .append("line")
+      .attr("x1", function(d) { return xScale_femaleemployrate(d.femaleemployrate)+4; })
+      .attr("x2", function(d) { return xScale_hivrate(d.hivrate)+4; })
+      .attr("y1", function(d) { return yScale(d.country)+4; })
+      .attr("y2", function(d) { return yScale(d.country)+4; })
+      .attr("stroke", "grey")
+      .attr("stroke-width", "1px")
+  
+  // Lines
+  svg.selectAll("myline")
+    .data(currentData)
+    .enter()
+    .append("line")
+      .attr("x1", function(d) { return xScale_hivrate(d.hivrate)+4; })
+      .attr("x2", function(d) { return xScale_internetuserate(d.internetuserate)+4; })
+      .attr("y1", function(d) { return yScale(d.country)+4; })
+      .attr("y2", function(d) { return yScale(d.country)+4; })
+      .attr("stroke", "grey")
+      .attr("stroke-width", "1px")
+
+  // Circles of variable 1
+  svg.selectAll("mycircle")
+    .data(currentData)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { return xScale_femaleemployrate(d.femaleemployrate)+4; })
+      .attr("cy", function(d) { return yScale(d.country)+4; })
+      .attr("r", "6")
+      .style("fill", "#aa0000")
+
+  // Circles of variable 1
+  svg.selectAll("mycircle")
+    .data(currentData)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { return xScale_hivrate(d.hivrate)+4; })
+      .attr("cy", function(d) { return yScale(d.country)+4; })
+      .attr("r", "6")
+      .style("fill", "#00aa00")
+
+  // Circles of variable 1
+  svg.selectAll("mycircle")
+    .data(currentData)
+    .enter()
+    .append("circle")
+      .attr("cx", function(d) { return xScale_internetuserate(d.internetuserate)+4; })
+      .attr("cy", function(d) { return yScale(d.country)+4; })
+      .attr("r", "6")
+      .style("fill", "#0000aa")
+
+
+
+  svg
+    .append("g")
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${height*4})`)
+    .call(
+      d3
+        .axisBottom(xScale_femaleemployrate)
+        .tickSizeOuter(0)
+    );
+
+  svg
+    .append("g")
+    .attr("class", "y-axis")
+    .call(
+      d3
+        .axisLeft(yScale)
+        .tickSizeOuter(0)
+    );
+
+  // Add labels for the x and y axes
+  svg
+    .append("text")
+    .attr("class", "x-axis-label")
+    .attr("x", width / 2)
+    .attr("y", height*4 + margin.top + 20)
+    .style("text-anchor", "middle")
+    .text("femaleemployrate");
+
+  svg
+    .append("text")
+    .attr("class", "y-axis-label")
+    .attr("x", -height*4 / 2)
+    .attr("y", -margin.left + 10)
+    .style("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .text("hivrate");
 }
