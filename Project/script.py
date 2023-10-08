@@ -4,8 +4,19 @@ import pandas
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import pycountry_convert as pc
 
-dfs = [None] * 4
+def country_to_continent(country_name):
+    try:
+        country_alpha2 = pc.country_name_to_country_alpha2(country_name)
+        country_continent_code = pc.country_alpha2_to_continent_code(country_alpha2)
+        country_continent_name = pc.convert_continent_code_to_continent_name(country_continent_code)
+        return country_continent_name
+    except:
+        print(country_name)
+        return ""
+
+dfs = [None] * 5
 def main():
     ls = os.listdir()
 
@@ -54,6 +65,8 @@ def main():
                     df = df.groupby('Country').mean(numeric_only=True).reset_index()
                     df = df.round(2)
                     df["Year"] = 2019
+                    df["Country"] = df["Country"].str.replace("Bolivia (Plurinational State of)", "Bolivia", regex=True)
+                    df["Country"] = df["Country"].str.replace("Russian Federation", "Russia", regex=True)
                     dfs[3] = df
                 
                 elif(i.startswith("2-")):
@@ -70,6 +83,7 @@ def main():
                         }, inplace=True)
                     for i in list(df.head(0))[2:]:
                         df[i] = df[i].apply(np.ceil)
+                    df["Country"] = df["Country"].str.replace("East Timor", "Timor-Leste", regex=True)
                     dfs[0] = df
 
                 elif(i.startswith("3-")):
@@ -89,6 +103,15 @@ def main():
                             'Dim1': "Type",
                             'FactValueNumeric': "PM2.5",
                             }, inplace=True)
+
+                        df["Country"] = df["Country"].str.replace("Russian Federation", "Russia", regex=True)
+
+                        # Pivot the data to reshape it
+                        pivot_df = df.pivot_table(index=['Country', 'Year', 'Continent'], columns='Type', values='PM2.5', aggfunc='first').reset_index()
+                        print(pivot_df["Continent"].unique())
+                        
+                        dfs[4] = pivot_df
+                        pivot_df.to_json("temp.json", orient='records', indent=4)
 
                 elif(i.startswith("5-")):
                     df.drop(columns=['country_code', 'sub_region_name', 'intermediate_region', 'income_group', 'total_gdp_million', 'gdp_variation', 'region_name'], inplace=True)
@@ -138,8 +161,6 @@ def main():
     merged = merged.dropna(subset=['Year'])
     merged = merged.fillna("..")
     
-    # merged.to_json("aaaa.json", orient='records', indent=4)
-
     merged = merged[merged['Year'] < 2020]
     merged = merged[merged['Year'] > 2009]
 
@@ -148,6 +169,21 @@ def main():
     merged["Year"] = merged["Year"].astype(int)
 
     merged = merged.merge(dfs[3], on=['Country', 'Year'], how='outer')
+    merged = merged.fillna("..")
+
+    # add continent column
+    merged["Continent"] = ""
+
+    merged["Country"] = merged["Country"].str.replace("Dem. Rep. Congo", "Democratic Republic of the Congo", regex=True)
+    merged["Country"] = merged["Country"].str.replace("CÃ´te d'Ivoire", "Côte d'Ivoire", regex=True)
+    merged["Country"] = merged["Country"].str.replace("Central African Rep.", "Central African Republic", regex=True)
+    merged["Country"] = merged["Country"].str.replace("Dominican Rep.", "Dominican Republic", regex=True)
+    merged["Country"] = merged["Country"].str.replace("Bolivia (Plurinational State of)", "Bolivia", regex=True)
+
+    merged["Continent"] = merged["Country"].apply(country_to_continent)
+
+    dfs[4].drop(columns=['Continent'], inplace=True)
+    merged = merged.merge(dfs[4], on=['Country', 'Year'], how='outer')
     merged = merged.fillna("..")
 
     # merged.to_csv("deaths_emissions_gdp.csv", index=False)
