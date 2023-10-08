@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>World Choropleth Map</title>
+        <style>
+            .container {
+                display: flex;
+            }
+            .overlay {
+                display: flex;
+            }
+
+            .dashboard {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            .visualization {
+                padding: 0px;
+            }
+            #choroplethTitle {
+                text-align: center;
+            }
+        </style>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+        <script src="script.js"></script>
+        <script src="linked.js"></script>
+    </head>
+    <body onload="startDashboard()">
+        <div class="overlay" id="yearSelector"></div>
+        <div class="dashboard">
+            <div class="container" style="background-color: wheat;">
+                <div style="width: -webkit-fill-available;">
+                    <div id="choroplethTitle"></div>
+                    <div class="visualization" id="choropleth"></div>
+                </div>
+                <div class="visualization" id="choroplethLabel"></div>
+            </div>
+            <div class="visualization" id="ternaryPlot" style="background-color: wheat;"></div>
+            <div class="visualization" id="scatterPlot" style="background-color: wheat;"></div>
+            <div class="visualization" id="clevelandPlot" style="background-color: wheat;"></div>
+        </div>
+    </body>
+</html>
