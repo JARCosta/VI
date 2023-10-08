@@ -296,7 +296,7 @@ function createClevelandDotPlot() {
     .select("#clevelandPlot")
     .append("svg")
     .attr("width", width + margin.left + margin.right)
-    .attr("height", height*4 + margin.top + margin.bottom)
+    .attr("height", height*4.5 + margin.top + margin.bottom)
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -304,24 +304,26 @@ function createClevelandDotPlot() {
   const xScale_femaleemployrate = d3
     .scaleLinear()
     .domain([
-      d3.min(currentData, (d) => d.femaleemployrate),
-      d3.max(currentData, (d) => d.femaleemployrate),
+      0,
+      d3.max(currentData, (d) => d.femaleemployrate)
     ])
     .range([0, width]);
 
   const xScale_hivrate = d3
     .scaleLinear()
     .domain([
-      d3.min(currentData, (d) => d.hivrate),
-      d3.max(currentData, (d) => d.hivrate),
+      0,
+      d3.max(currentData, (d) => d.hivrate)*4 // WHY *4 ???????????????
     ])
     .range([0, width]);
+
+  console.log(d3.max(currentData, (d) => d.hivrate)); // WHY IS IT 6.5 IF THERE ARE VALUES LIKE 26 ????????
 
   const xScale_internetuserate = d3
     .scaleLinear()
     .domain([
-      d3.min(currentData, (d) => d.internetuserate),
-      d3.max(currentData, (d) => d.internetuserate),
+      0,
+      d3.max(currentData, (d) => d.internetuserate)
     ])
     .range([0, width]);
 
@@ -365,6 +367,7 @@ function createClevelandDotPlot() {
       .attr("cy", function(d) { return yScale(d.country)+4; })
       .attr("r", "6")
       .style("fill", "#aa0000")
+      .attr("stroke", "black")
 
   // Circles of variable 1
   svg.selectAll("mycircle")
@@ -375,6 +378,7 @@ function createClevelandDotPlot() {
       .attr("cy", function(d) { return yScale(d.country)+4; })
       .attr("r", "6")
       .style("fill", "#00aa00")
+      .attr("stroke", "black")
 
   // Circles of variable 1
   svg.selectAll("mycircle")
@@ -385,6 +389,7 @@ function createClevelandDotPlot() {
       .attr("cy", function(d) { return yScale(d.country)+4; })
       .attr("r", "6")
       .style("fill", "#0000aa")
+      .attr("stroke", "black")
 
 
 
@@ -395,6 +400,24 @@ function createClevelandDotPlot() {
     .call(
       d3
         .axisBottom(xScale_femaleemployrate)
+        .tickSizeOuter(0)
+    );
+  svg
+    .append("g")
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${height*4.2})`)
+    .call(
+      d3
+        .axisBottom(xScale_hivrate)
+        .tickSizeOuter(0)
+    );
+  svg
+    .append("g")
+    .attr("class", "x-axis")
+    .attr("transform", `translate(0,${height*4.4})`)
+    .call(
+      d3
+        .axisBottom(xScale_internetuserate)
         .tickSizeOuter(0)
     );
 
@@ -415,6 +438,22 @@ function createClevelandDotPlot() {
     .attr("y", height*4 + margin.top + 20)
     .style("text-anchor", "middle")
     .text("femaleemployrate");
+  // Add labels for the x and y axes
+  svg
+    .append("text")
+    .attr("class", "x-axis-label")
+    .attr("x", width / 2)
+    .attr("y", height*4.2 + margin.top + 20)
+    .style("text-anchor", "middle")
+    .text("hiverate");
+  // Add labels for the x and y axes
+  svg
+    .append("text")
+    .attr("class", "x-axis-label")
+    .attr("x", width / 2)
+    .attr("y", height*4.4 + margin.top + 20)
+    .style("text-anchor", "middle")
+    .text("internetuserate");
 
   svg
     .append("text")
@@ -423,5 +462,5 @@ function createClevelandDotPlot() {
     .attr("y", -margin.left + 10)
     .style("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
-    .text("hivrate");
+    .text("Countries");
 }
