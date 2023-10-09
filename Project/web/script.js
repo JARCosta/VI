@@ -58,6 +58,7 @@ function startDashboard() {
     createYearFilter();
     createChoroplethMap();
     createTernaryPlot();
+    createParallelCoordinates();
     // createScatterPlot();
     // createClevelandDotPlot();
   });
@@ -161,12 +162,12 @@ function createChoroplethMap() {
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.bottom)
-    .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white;")
+    .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     ;
 
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
-  .attr("transform", `translate(${margin.left/1.6},${margin.top*1.75})`);
+  .attr("transform", `translate(${margin.left},${margin.top*1.75})`);
 
   // Create a color scale for the Total values
   const colorScale = d3
@@ -287,6 +288,190 @@ function createChoroplethMap() {
   }
 }
 
+function createParallelCoordinates() {
+  // Filter the data to remove entries with missing values
+  currentData = globalData.filter(function (d) {
+    return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== ".." && d.Towns !== ".." && d["Total Emissions"] !== "..";
+  });
+
+  // Set the dimensions and margins of the graph
+  const margin = { top: 30, right: 10, bottom: 10, left: 30 };
+  const width = 600 - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
+  const padding = 28, brush_width = 20;
+  var filters = {};
+
+  // Append the SVG object to the body of the page
+  const svg = d3
+    .select("#parallelCoordinates")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .style("width", "-webkit-fill-available")
+    // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`)
+    ;
+
+  // Extract the list of dimensions from the data
+  const dimensions = ["Cities", "Towns", "Urban", "Rural"];
+
+  // Create a scale for each dimension
+  const y = {};
+  for (const dim of dimensions) {
+    y[dim] = d3
+      .scaleLinear()
+      .domain([0,100])
+      // .domain(d3.extent(currentData, (d) => d[dim]))
+      .range([height, 0]);
+  }
+
+
+  // Build the X scale
+  const x = d3.scalePoint().range([0, width]).padding(1).domain(dimensions);
+
+  // Each brush generator
+  const brushEventHandler = function (feature, event) {
+    if (event.sourceEvent && event.sourceEvent.type === "zoom")
+      return; // ignore brush-by-zoom
+    if (event.selection != null) {
+      filters[feature] = event.selection.map(d => y[feature].invert(d));
+    } else {
+      if (feature in filters)
+        delete (filters[feature]);
+    }
+    applyFilters();
+  }
+
+  const applyFilters = function () {
+    d3.select('g.active').selectAll('path')
+      .style('display', d => (selected(d) ? null : 'none'))
+      ;
+    d3.selectAll("circle")
+      .style('fill', d => (selected(d) ? 'red' : null))
+      ;
+  }
+    
+  const selected = function (d) {
+    const _filters = Object.entries(filters);
+    return _filters.every(f => {
+      return f[1][1] <= d[f[0]] && d[f[0]] <= f[1][0];
+    });
+  }
+
+
+  const yBrushes = {};
+  Object.entries(y).map(x => {
+    let extent = [
+      [-(brush_width / 2), padding],
+      [brush_width / 2, height - padding]
+    ];
+    yBrushes[x[0]] = d3.brushY()
+      .extent(extent)
+      .on("start brush end",(a)=> brushEventHandler(x[0], a))
+      ;
+  });
+
+  // Create the path function
+  const path = (d) => d3.line()(dimensions.map((p) => [x(p), y[p](d[p])]));
+
+
+  // average values of current data where same coutry but differente year
+  const averageData = [];
+
+  currentData.forEach((element) => {
+    const country = element.Country;
+    const year = element.Year;
+    const cities = element.Cities;
+    const towns = element.Towns;
+    const urban = element.Urban;
+    const rural = element.Rural;
+    const totalEmissions = element["Total Emissions"];
+
+    const index = averageData.findIndex((d) => d.Country == country);
+
+    if (index == -1) {
+
+      averageData.push({
+        Country: country,
+        Year: year,
+        Cities: cities,
+        Towns: towns,
+        Urban: urban,
+        Rural: rural,
+        "Total emissions": totalEmissions,
+      });
+    }
+    else {
+      averageData[index].Cities = (averageData[index].Cities + cities)/2;
+      averageData[index].Towns = (averageData[index].Towns + towns)/2;
+      averageData[index].Urban = (averageData[index].Urban + urban)/2;
+      averageData[index].Rural = (averageData[index].Rural + rural)/2;
+      averageData[index]["Total emissions"] = (averageData[index]["Total emissions"] + totalEmissions)/2;
+    }
+  });
+
+
+  // Inactive data
+  svg.append('g').attr('class', 'inactive').selectAll('path')
+    .data(averageData)
+    .enter()
+    .append('path')
+    .attr('d', path)
+    .attr('stroke', '#888')
+    .attr("stroke-opacity", 0.25)
+    .attr("stroke-width", 1.5)
+    .attr("fill", "none")
+    .style("transform", "scale(2,1)")
+    ;
+  
+  // Active data
+  svg.append('g').attr('class', 'active').selectAll('path')
+    .data(averageData)
+    .enter()
+    .append('path')
+    .attr('d', path)
+    .attr('stroke', '#44d')
+    .attr("stroke-opacity", 0.5)
+    .attr("stroke-width", 1.5)
+    .attr("fill", "none")
+    .style("transform", "scale(2,1)")
+    ;
+
+  // Vertical axis for the features
+  const featureAxisG = svg.selectAll('g.feature')
+    .data(dimensions)
+    .enter()
+    .append('g')
+    .attr('class', 'feature')
+    .attr('transform', d => ('translate(' + x(d)*2 + ',0)'))
+    ;
+
+  featureAxisG
+    .append('g')
+    .each(function (d) {
+      d3.select(this).call(d3.axisLeft().scale(y[d]));
+
+    });
+
+  featureAxisG
+  .each(function(d){
+    d3.select(this)
+      .append('g')
+      .attr('class','brush')
+      .call(yBrushes[d]);
+  });
+
+  featureAxisG
+  .append("text")
+  .attr("text-anchor", "middle")
+  .attr('y', padding/2)
+  .attr("transform", "translate(0,-25)")
+  .text(d=>d);
+
+
+}
+
 function createTernaryPlot() {
   currentData = globalData.filter(function (d) {
     return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== ".." && d.Towns !== "..";
@@ -301,6 +486,10 @@ function createTernaryPlot() {
     .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white;")
 
   markers = svg
+    .append("g")
+    .attr("transform", `translate(${margin.left/1.6},${margin.top*1.75})`);
+  
+  overlay = svg
     .append("g")
     .attr("transform", `translate(${margin.left/1.6},${margin.top*1.75})`);
 
@@ -343,7 +532,7 @@ function createTernaryPlot() {
     .y((d) => ternaryScale(d.y))
     .curve(d3.curveLinearClosed);
 
-    markers
+  overlay
     .append("path")
     .datum(vertices)
     .attr("class", "triangle")
@@ -361,13 +550,13 @@ function createTernaryPlot() {
   const minX = d3.min(currentData, (d) => convertToTernary(d).x)
   const maxXVals = d3.max([maxX, Math.abs(minX)])
 
-  const xScale = d3.scaleLinear()
+  const xScale = d3.scaleLinear() //.scaleLog()
   .domain([d3.min(currentData, (d) => convertToTernary(d).x),d3.max(currentData, (d) => convertToTernary(d).x)])
-  .domain([-0.5,0.5])
+  .domain([-0.1,0.1])
   .range([0, width]);
-  const yScale = d3.scaleLinear()
+  const yScale = d3.scaleLinear() //.scaleLog()
   .domain([d3.min(currentData, (d) => convertToTernary(d).y),d3.max(currentData, (d) => convertToTernary(d).y)])
-  .domain([-0.5,0.5])
+  .domain([-0.5,0.2])
   .range([0, height]);
 
   const citiesScale = d3.scaleLog()
@@ -531,7 +720,7 @@ function createTernaryPlot() {
 
 
   // Add labels for the axes
-  markers
+  overlay
     .append("text")
     .attr("class", "x-axis-label")
     .attr("x", width / 2)
@@ -539,7 +728,7 @@ function createTernaryPlot() {
     .style("text-anchor", "middle")
     .text("Rural");
 
-  markers
+  overlay
     .append("text")
     .attr("class", "y-axis-label")
     .attr("x", -height + 60)
@@ -548,7 +737,7 @@ function createTernaryPlot() {
     .attr("transform", "rotate(-60)")
     .text("Cities");
     
-  markers
+  overlay
     .append("text")
     .attr("class", "x-axis-label")
     .attr("x", width + 65)

@@ -74,7 +74,7 @@ def main():
                     dfs[0] = df
 
                 elif(i.startswith("3-")):
-                    df.drop(columns=['Code'], inplace=True)
+                    df.drop(columns=['Code', 'Land-use change and forestry'], inplace=True)
                     df.rename(columns={'Entity': 'Country'}, inplace=True)
                     # df.fillna(0, inplace=True)
                     df['Total emissions'] = df.sum(axis=1, numeric_only=True)
@@ -101,7 +101,7 @@ def main():
                         pivot_df["Country"] = pivot_df["Country"].str.replace("Iran", "Iran", regex=True)
                         
                         dfs[4] = pivot_df
-                        pivot_df.to_json("temp.json", orient='records', indent=4)
+                        # pivot_df.to_json("temp.json", orient='records', indent=4)
 
                 elif(i.startswith("5-")):
                     df.drop(columns=['country_code', 'sub_region_name', 'intermediate_region', 'income_group', 'total_gdp_million', 'gdp_variation', 'region_name'], inplace=True)
