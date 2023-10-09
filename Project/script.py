@@ -143,7 +143,7 @@ def main():
     merged = merged.merge(dfs[2], on=['Country', 'Year'], how='outer')
 
     # merge with map data
-    with open("map_data.json", 'r') as f:
+    with open("web/data.json", 'r') as f:
         data = json.loads(f.read())
         els = [el["properties"]["name"] for el in data["objects"]["countries"]["geometries"]]
         new_df = pandas.DataFrame({"Country": els, "ID": range(els.__len__())})

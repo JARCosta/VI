@@ -289,7 +289,7 @@ function createChoroplethMap() {
 
 function createTernaryPlot() {
   currentData = globalData.filter(function (d) {
-    return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== "..";
+    return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== ".." && d.Towns !== "..";
   });
 
   // Create an SVG element to hold the ternary plot
@@ -352,13 +352,22 @@ function createTernaryPlot() {
     .attr("stroke", "black");
 
   // Create scales for the ternary coordinates
+
+  const maxY = d3.max(currentData, (d) => convertToTernary(d).y)
+  const minY = d3.min(currentData, (d) => convertToTernary(d).y)
+  const maxYVals = d3.max([maxY, Math.abs(minY)])
+
+  const maxX = d3.max(currentData, (d) => convertToTernary(d).x)
+  const minX = d3.min(currentData, (d) => convertToTernary(d).x)
+  const maxXVals = d3.max([maxX, Math.abs(minX)])
+
   const xScale = d3.scaleLinear()
   .domain([d3.min(currentData, (d) => convertToTernary(d).x),d3.max(currentData, (d) => convertToTernary(d).x)])
-  .domain([0,1])
+  .domain([-0.5,0.5])
   .range([0, width]);
   const yScale = d3.scaleLinear()
   .domain([d3.min(currentData, (d) => convertToTernary(d).y),d3.max(currentData, (d) => convertToTernary(d).y)])
-  .domain([0,1])
+  .domain([-0.5,0.5])
   .range([0, height]);
 
   const citiesScale = d3.scaleLog()
@@ -397,8 +406,8 @@ function createTernaryPlot() {
 
     const TopUp = top * 2
 
-    const ternaryY = 0.5 + TopUp - LeftDown - RightDown
-    const ternaryX = 0.5 + RightRight - LeftLeft
+    const ternaryY = (TopUp - LeftDown - RightDown) //* data.Total/5
+    const ternaryX = (RightRight - LeftLeft) //* data.Total/5
 
     // console.log(
     //   "0.5 + "+TopUp+" - "+LeftDown+" - "+RightDown+"\n"+
@@ -412,7 +421,8 @@ function createTernaryPlot() {
     // console.log("Rural: " + data.Rural + "\nUrban: " + data.Urban + "\nCities: " + data.Cities);
     // console.log("ternaryX: " + ternaryX + "\nternaryY: " + ternaryY + "\ntotal: " + total);
     // console.log("Ratio: " + data.Cities / data.Rural)
-    return { x: ternaryX, y: 1 - ternaryY };
+    // console.log(ternaryX + " " + ternaryY)
+    return { x: ternaryX, y: ternaryY };
   }
 
   const colorScale = d3
@@ -450,7 +460,7 @@ function createTernaryPlot() {
     .attr("y2", (d) => yScale(convertToTernary(getNextData(d)).y))
     .attr("stroke", (d) => yearColorScale(d.Year + 1))
     .attr("stroke-width", 2)
-    .attr("stroke-opacity", 0.33)
+    .attr("stroke-opacity", 0.0)
     .on("click", handleMouseOver)
     .append("title")
     .text((d) => d.Country);
@@ -477,7 +487,7 @@ function createTernaryPlot() {
     .attr("stroke-opacity", 0.33)
     .on("click", handleMouseOver)
     .append("title")
-    .text((d) => d.Country + " " + d.Year + "\n Rural: " + d.Rural + "\n Urban: " + d.Urban + "\n Cities: " + d.Cities);
+    .text((d) => d.Country + " " + d.Year + "\n Towns: " + d.Towns + "\n Rural: " + d.Rural + "\n Urban: " + d.Urban + "\n Cities: " + d.Cities);
 
 
   // Add tick marks and labels for the ternary axes
