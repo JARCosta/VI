@@ -19,6 +19,7 @@ function handleMouseOver(event, item) {
     .attr("stroke", "red")
     .attr("z-index",-1)
     .attr("position","relative")
+    .raise()
     ;
 
   d3.selectAll(".line")
@@ -35,9 +36,10 @@ function handleMouseOver(event, item) {
     })
     .attr("stroke-opacity", 1)
     .attr("fill-opacity", 1)
-    .attr("stroke", "red")
+    // .attr("stroke", "red")
     .attr("z-index",-1)
     .attr("position","relative")
+    .raise()
     ;
 
     d3.selectAll(".circle.data")
@@ -57,6 +59,7 @@ function handleMouseOver(event, item) {
     .attr("stroke", "red")
     .attr("z-index",-1)
     .attr("position","relative")
+    .raise()
     ;
 
 

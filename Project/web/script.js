@@ -201,13 +201,23 @@ function createChoroplethMap() {
     .text((d) => d.properties.name);
 
   // Set the fill color of each country based on its Total value
+
+  currentData.forEach((element) => {
+    mapGroup
+      .selectAll("path")
+      .attr("fill", "transparent");
+      // console.log(element.Total);
+  });
+
   currentData.forEach((element) => {
     mapGroup
       .selectAll("path")
       .filter(function (d) {
         return d.properties.name == element.Country;
       })
-      .attr("fill", d3.interpolateBlues(colorScale(element.Total)));
+      .attr("fill", function (d) {
+        return element.Total != ".." ? d3.interpolateBlues(colorScale(element.Total)) : "transparent";
+      });
       // console.log(element.Total);
   });
 
@@ -344,9 +354,11 @@ function createTernaryPlot() {
   // Create scales for the ternary coordinates
   const xScale = d3.scaleLinear()
   .domain([d3.min(currentData, (d) => convertToTernary(d).x),d3.max(currentData, (d) => convertToTernary(d).x)])
+  .domain([0,1])
   .range([0, width]);
   const yScale = d3.scaleLinear()
   .domain([d3.min(currentData, (d) => convertToTernary(d).y),d3.max(currentData, (d) => convertToTernary(d).y)])
+  .domain([0,1])
   .range([0, height]);
 
   const citiesScale = d3.scaleLog()
@@ -371,10 +383,10 @@ function createTernaryPlot() {
     const sin = Math.sin(30)
     const cos =  Math.cos(30)
 
-    const total = data.Cities + data.Urban + data.Rural
+    const total = data.Cities + data.Towns + data.Rural
 
     const left = data.Cities / total
-    const right = data.Urban / total
+    const right = data.Towns / total
     const top = data.Rural / total
 
     const LeftLeft = Math.abs( cos * left )
@@ -437,11 +449,11 @@ function createTernaryPlot() {
     .attr("x2", (d) => xScale(convertToTernary(getNextData(d)).x))
     .attr("y2", (d) => yScale(convertToTernary(getNextData(d)).y))
     .attr("stroke", (d) => yearColorScale(d.Year + 1))
-    .attr("stroke-width", 1.5)
+    .attr("stroke-width", 2)
     .attr("stroke-opacity", 0.33)
     .on("click", handleMouseOver)
     .append("title")
-    .text((d) => d.Country + "\n Rural: " + d.Rural + "\n Urban: " + d.Urban + "\n Cities: " + d.Cities);
+    .text((d) => d.Country);
   
   // Add circles to the ternary plot representing each data point
   markers
@@ -465,7 +477,47 @@ function createTernaryPlot() {
     .attr("stroke-opacity", 0.33)
     .on("click", handleMouseOver)
     .append("title")
-    .text((d) => d.Country + "\n Rural: " + d.Rural + "\n Urban: " + d.Urban + "\n Cities: " + d.Cities);
+    .text((d) => d.Country + " " + d.Year + "\n Rural: " + d.Rural + "\n Urban: " + d.Urban + "\n Cities: " + d.Cities);
+
+
+  // Add tick marks and labels for the ternary axes
+
+  for (let index = 0.25; index <= 1.75; index += 0.25) {
+    markers
+      .append("line")
+      .attr("class", "ternary axis")
+      .attr("x1", width/2 * index)
+      .attr("y1", height)
+      .attr("x2", width/2 + width/4 * index)
+      .attr("y2", 0 + height/2 * index)
+      .attr("stroke", "black")
+      .attr("stroke-opacity", 0.25)
+      .attr("stroke-width", 0.5);
+      
+    markers
+      .append("line")
+      .attr("class", "ternary axis")
+      .attr("x2", width/4 * index)
+      .attr("y1", height)
+      .attr("x1", width/2 * index)
+      .attr("y2", 0 + height/2 * (2 - index))
+      .attr("stroke", "black")
+      .attr("stroke-opacity", 0.25)
+      .attr("stroke-width", 0.5);
+      
+    markers
+      .append("line")
+      .attr("class", "ternary axis")
+      .attr("x2", width/2 - height/3.28 * index)
+      .attr("y1", height/2 * index)
+      .attr("x1", width/2 + height/3.28 * index)
+      .attr("y2", height/2 * index)
+      .attr("stroke", "black")
+      .attr("stroke-opacity", 0.25)
+      .attr("stroke-width", 0.5);
+  } 
+
+
 
 
   // Add labels for the axes

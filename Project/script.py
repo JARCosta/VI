@@ -18,35 +18,20 @@ def country_to_continent(country_name):
 
 dfs = [None] * 5
 def main():
-    ls = os.listdir()
-
-    files = [
-        '.gitignore',
-        'script.py',
-        'deaths_emissions_gdp.json',
-        'deaths_emissions_gdp.csv',
-        'map_data.json',
-        'temp.json',
-        ]
-
-    for i in files:
-        try:
-            ls.pop(ls.index(i))
-        except:
-            continue 
+    ls = os.listdir("data")
 
     for i in ls:
-        files = os.listdir(i)
+        files = os.listdir("data/"+i)
         for j in files:
-            path = i + '/' + j
+            path = "data/"+ i + '/' + j
             if j.endswith('.csv'):
-                print(path)
+                print(path.replace("data/", ""))
                 
-                df = pandas.read_csv(path, encoding='unicode_escape', on_bad_lines='skip')
+                df = pandas.read_csv(path, encoding='utf-8', on_bad_lines='skip')
                 
                 # switch to semicolon as separator
                 if df.columns.__len__() < 2:
-                    df = pandas.read_csv(path, encoding='unicode_escape', on_bad_lines='skip', sep=';')
+                    df = pandas.read_csv(path, encoding='utf-8', on_bad_lines='skip', sep=';')
                 
                 # remove columns with only one value
                 remove_list = []
@@ -65,7 +50,9 @@ def main():
                     df = df.groupby('Country').mean(numeric_only=True).reset_index()
                     df = df.round(2)
                     df["Year"] = 2019
-                    df["Country"] = df["Country"].str.replace("Bolivia (Plurinational State of)", "Bolivia", regex=True)
+                    df["Country"] = df["Country"].str.replace("Venezuela (Bolivarian Republic of)", "Venezuela", regex=True)
+                    df["Country"] = df["Country"].str.replace("Iran", "Iran", regex=True)
+                    df["Country"] = df["Country"].str.replace("Bolivia", "Bolivia", regex=True)
                     df["Country"] = df["Country"].str.replace("Russian Federation", "Russia", regex=True)
                     dfs[3] = df
                 
@@ -104,11 +91,14 @@ def main():
                             'FactValueNumeric': "PM2.5",
                             }, inplace=True)
 
+                        df["Country"] = df["Country"].str.replace("Venezuela (Bolivarian Republic of)", "Venezuela", regex=True)
+                        df["Country"] = df["Country"].str.replace(" (Islamic Republic of)", "", regex=True)
+                        df["Country"] = df["Country"].str.replace("T\u00fcrkiye", "Turkey", regex=True)
                         df["Country"] = df["Country"].str.replace("Russian Federation", "Russia", regex=True)
 
                         # Pivot the data to reshape it
                         pivot_df = df.pivot_table(index=['Country', 'Year', 'Continent'], columns='Type', values='PM2.5', aggfunc='first').reset_index()
-                        print(pivot_df["Continent"].unique())
+                        pivot_df["Country"] = pivot_df["Country"].str.replace("Iran", "Iran", regex=True)
                         
                         dfs[4] = pivot_df
                         pivot_df.to_json("temp.json", orient='records', indent=4)
@@ -121,6 +111,7 @@ def main():
                         "total_gdp": "GDP",
                         }, inplace=True)
                     df["GDP"] = df["GDP"].astype(int)
+                    df["Country"] = df["Country"].str.replace("Venezuela (Bolivarian Republic of)", "Venezuela", regex=True)
                     dfs[2] = df
 
                 # filter years
@@ -146,6 +137,8 @@ def main():
     merged["Country"] = merged["Country"].str.replace("Cote d'Ivoire", "Côte d'Ivoire")
     merged["Country"] = merged["Country"].str.replace("Dominican Republic", "Dominican Rep.")
     merged["Country"] = merged["Country"].str.replace("Democratic Republic of Congo", "Dem. Rep. Congo")
+    merged["Country"] = merged["Country"].str.replace("Venezuela (Bolivarian Republic of)", "Venezuela", regex=True)
+
 
     merged = merged.merge(dfs[2], on=['Country', 'Year'], how='outer')
 
@@ -178,7 +171,7 @@ def main():
     merged["Country"] = merged["Country"].str.replace("CÃ´te d'Ivoire", "Côte d'Ivoire", regex=True)
     merged["Country"] = merged["Country"].str.replace("Central African Rep.", "Central African Republic", regex=True)
     merged["Country"] = merged["Country"].str.replace("Dominican Rep.", "Dominican Republic", regex=True)
-    merged["Country"] = merged["Country"].str.replace("Bolivia (Plurinational State of)", "Bolivia", regex=True)
+    merged["Country"] = merged["Country"].str.replace("Bolivia", "Bolivia", regex=True)
 
     merged["Continent"] = merged["Country"].apply(country_to_continent)
 
@@ -187,7 +180,7 @@ def main():
     merged = merged.fillna("..")
 
     # merged.to_csv("deaths_emissions_gdp.csv", index=False)
-    merged.to_json("deaths_emissions_gdp.json", orient='records', indent=4)
+    merged.to_json("web/deaths_emissions_gdp.json", orient='records', indent=4)
 
 main()
 
