@@ -167,7 +167,9 @@ function createChoroplethMap() {
 
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
-  .attr("transform", `translate(${margin.left},${margin.top*1.75})`);
+    .attr("transform", `translate(${margin.left*0.625},-${margin.top*1})`)
+    .attr("style", `scale: 2`)
+  ;
 
   // Create a color scale for the Total values
   const colorScale = d3
@@ -227,8 +229,8 @@ function createChoroplethMap() {
     .zoom()
     .scaleExtent([1, 8])
     .translateExtent([
-      [0, 0],
-      [width, height],
+      [0, height/16],
+      [width, height*1.5],
     ])
     .on("zoom", zoomed);
 
@@ -294,6 +296,42 @@ function createParallelCoordinates() {
     return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== ".." && d.Towns !== ".." && d["Total Emissions"] !== "..";
   });
 
+    // average values of current data where same coutry but differente year
+    const averageData = [];
+    currentData.forEach((element) => {
+      const country = element.Country;
+      const year = element.Year;
+      const cities = element.Cities;
+      const towns = element.Towns;
+      const urban = element.Urban;
+      const rural = element.Rural;
+      const totalEmissions = element["Total Emissions"];
+  
+      const index = averageData.findIndex((d) => d.Country == country);
+  
+      if (index == -1) {
+  
+        averageData.push({
+          Country: country,
+          Year: year,
+          Cities: cities,
+          Towns: towns,
+          Urban: urban,
+          Rural: rural,
+          "Total emissions": totalEmissions,
+        });
+      }
+      else {
+        averageData[index].Cities = (averageData[index].Cities + cities)/2;
+        averageData[index].Towns = (averageData[index].Towns + towns)/2;
+        averageData[index].Urban = (averageData[index].Urban + urban)/2;
+        averageData[index].Rural = (averageData[index].Rural + rural)/2;
+        averageData[index]["Total emissions"] = (averageData[index]["Total emissions"] + totalEmissions)/2;
+      }
+    });
+
+  currentData = averageData;
+
   // Set the dimensions and margins of the graph
   const margin = { top: 30, right: 10, bottom: 10, left: 30 };
   const width = 600 - margin.left - margin.right;
@@ -317,25 +355,79 @@ function createParallelCoordinates() {
   const dimensions = ["Cities", "Towns", "Urban", "Rural"];
 
   // Create a scale for each dimension
-  const y = {};
+  const yScale = {};
+
   for (const dim of dimensions) {
-    y[dim] = d3
+    yScale[dim] = d3
       .scaleLinear()
       .domain([0,100])
-      // .domain(d3.extent(currentData, (d) => d[dim]))
       .range([height, 0]);
   }
 
 
+
+  const xVerticalScale = d3
+    .scaleBand()
+    .domain([0,100])
+    .range([0, height])
+    .padding(0.75);
+    ;
+  const xVerticalAxis2 = d3
+    .scaleLinear()
+    .domain([0,100])
+    .range([0, height])
+    ;
+
   // Build the X scale
-  const x = d3.scalePoint().range([0, width]).padding(1).domain(dimensions);
+  const xScale = d3.scalePoint().range([0, width]).padding(1).domain(dimensions);
+
+
+  function histogram2(data, dim) {
+    var histogram = d3.histogram()
+    .value(function(d) { return d[dim]; })
+    .domain(yScale[dim].domain())
+    .thresholds(10);
+
+    var bins = histogram(data);
+    return bins;
+  }
+
+  // var histogram = d3.histogram()
+  // .value(function(d) { return d["Cities"]; })
+  // .domain(yScale["Cities"].domain())
+  // .thresholds(10);
+
+  // And apply this function to data to get the bins
+
+  var bins = [];
+  for (const dim of dimensions) {
+    bins[dim] = histogram2(currentData, dim);
+  }
+
+
+  var yHistogramScales = []
+
+  for (const dim of dimensions) {
+    yHistogramScales[dim] = d3
+      .scaleLinear()
+      .domain([0, d3.max(bins[dim], d => d.length)])
+      .range([0, 100]);
+  }
+
+  // const yHistogramScale = d3
+  //     .scaleLinear()
+  //     .domain([0, d3.max(bins, d => d.length)])
+  //     .range([0, 100]);
+
+
+
 
   // Each brush generator
   const brushEventHandler = function (feature, event) {
     if (event.sourceEvent && event.sourceEvent.type === "zoom")
       return; // ignore brush-by-zoom
     if (event.selection != null) {
-      filters[feature] = event.selection.map(d => y[feature].invert(d));
+      filters[feature] = event.selection.map(d => yScale[feature].invert(d));
     } else {
       if (feature in filters)
         delete (filters[feature]);
@@ -361,10 +453,10 @@ function createParallelCoordinates() {
 
 
   const yBrushes = {};
-  Object.entries(y).map(x => {
+  Object.entries(yScale).map(x => {
     let extent = [
-      [-(brush_width / 2), padding],
-      [brush_width / 2, height - padding]
+      [-(brush_width / 2), 0],
+      [brush_width / 2, height]
     ];
     yBrushes[x[0]] = d3.brushY()
       .extent(extent)
@@ -373,48 +465,50 @@ function createParallelCoordinates() {
   });
 
   // Create the path function
-  const path = (d) => d3.line()(dimensions.map((p) => [x(p), y[p](d[p])]));
+  const path = (d) => d3.line()(dimensions.map((p) => [xScale(p), yScale[p](d[p])]));
 
 
-  // average values of current data where same coutry but differente year
-  const averageData = [];
+  console.log(bins);
+  
+  yAxis = [];
+  for (const dim of dimensions) {
+    yAxis[dim] = svg
+      .append("g")
+      .attr("class", "yAxis")
+      ;
+  }
 
-  currentData.forEach((element) => {
-    const country = element.Country;
-    const year = element.Year;
-    const cities = element.Cities;
-    const towns = element.Towns;
-    const urban = element.Urban;
-    const rural = element.Rural;
-    const totalEmissions = element["Total Emissions"];
+  var counter = 1;
+  for (const dim of dimensions) {
+    yAxis[dim]
+      .append("g").attr('class', 'bars')
+      .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${224 * counter}px);`)
+      .selectAll(".rect")
+      .data(bins[dim])
+      .enter()
+      .append("rect")
+      .attr("class", "bar data")
+      
+      .attr("x", (d) => xVerticalAxis2(d.x0))
+      .attr("y", 0)
+      // .attr("country list", (d) => d.)
+      .attr("length", (d) => d.length)
+      
+      .attr("width", xVerticalScale.bandwidth())
+      .attr("height", (d) => yHistogramScales[dim](d.length))
+      
+      .attr("fill", "none")
+      .attr("stroke", "black")
+      .attr("stroke-width", 1.5)
+      .text((d) => d.title);
+    counter++;
+  }
 
-    const index = averageData.findIndex((d) => d.Country == country);
-
-    if (index == -1) {
-
-      averageData.push({
-        Country: country,
-        Year: year,
-        Cities: cities,
-        Towns: towns,
-        Urban: urban,
-        Rural: rural,
-        "Total emissions": totalEmissions,
-      });
-    }
-    else {
-      averageData[index].Cities = (averageData[index].Cities + cities)/2;
-      averageData[index].Towns = (averageData[index].Towns + towns)/2;
-      averageData[index].Urban = (averageData[index].Urban + urban)/2;
-      averageData[index].Rural = (averageData[index].Rural + rural)/2;
-      averageData[index]["Total emissions"] = (averageData[index]["Total emissions"] + totalEmissions)/2;
-    }
-  });
 
 
   // Inactive data
   svg.append('g').attr('class', 'inactive').selectAll('path')
-    .data(averageData)
+    .data(currentData)
     .enter()
     .append('path')
     .attr('d', path)
@@ -423,34 +517,38 @@ function createParallelCoordinates() {
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
     .style("transform", "scale(2,1)")
+    .append("title")
+    .text((d) => d.Country)
     ;
   
   // Active data
   svg.append('g').attr('class', 'active').selectAll('path')
-    .data(averageData)
+    .data(currentData)
     .enter()
     .append('path')
     .attr('d', path)
-    .attr('stroke', '#44d')
+    .attr('stroke', 'steelblue')
     .attr("stroke-opacity", 0.5)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
     .style("transform", "scale(2,1)")
+    .append("title")
+    .text((d) => d.Country)
     ;
-
+  
   // Vertical axis for the features
   const featureAxisG = svg.selectAll('g.feature')
     .data(dimensions)
     .enter()
     .append('g')
     .attr('class', 'feature')
-    .attr('transform', d => ('translate(' + x(d)*2 + ',0)'))
+    .attr('transform', d => ('translate(' + xScale(d)*2 + ',0)'))
     ;
 
   featureAxisG
     .append('g')
     .each(function (d) {
-      d3.select(this).call(d3.axisLeft().scale(y[d]));
+      d3.select(this).call(d3.axisLeft().scale(yScale[d]));
 
     });
 

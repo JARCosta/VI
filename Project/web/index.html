@@ -3,6 +3,9 @@
     <head>
         <title>World Choropleth Map</title>
         <style>
+            body {
+                font-family: Monaco, monospace;
+            }
             .container {
                 display: flex;
             }
@@ -32,17 +35,17 @@
     <body onload="startDashboard()">
         <div class="overlay" id="yearSelector"></div>
         <div class="dashboard">
-            <div class="container" style="background-color: wheat;">
+            <div class="container" style="background-color: #eee;">
                 <div style="width: -webkit-fill-available;">
                     <div id="choroplethTitle"></div>
                     <div class="visualization" id="choropleth"></div>
                 </div>
                 <div class="visualization" id="choroplethLabel"></div>
             </div>
-            <div class="visualization" id="parallelCoordinates" style="background-color: wheat;"></div>
-            <div class="visualization" id="ternaryPlot" style="background-color: wheat;"></div>
-            <div class="visualization" id="scatterPlot" style="background-color: wheat;"></div>
-            <div class="visualization" id="clevelandPlot" style="background-color: wheat;"></div>
+            <div class="visualization" id="parallelCoordinates" style="background-color: #eee;"></div>
+            <div class="visualization" id="ternaryPlot" style="background-color: #eee;"></div>
+            <div class="visualization" id="scatterPlot" style="background-color: #eee;"></div>
+            <div class="visualization" id="clevelandPlot" style="background-color: #eee;"></div>
         </div>
     </body>
 </html>

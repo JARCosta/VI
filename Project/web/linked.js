@@ -23,7 +23,6 @@ function handleMouseOver(event, item) {
           .attr("stroke-opacity", 1)
           .attr("fill-opacity", 1)
           .attr("stroke", "black")
-          .raise()
           ;
       } else {
         // Country is not selected, so select it
