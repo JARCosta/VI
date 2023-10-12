@@ -123,7 +123,7 @@ function createChoroplethMap() {
       })
       .attr("fill", d3.interpolateBlues(colorScale(element.incomeperperson)))
       .append("title")
-      .text((d) =>element.country + "\n Income per person: " + Math.round(element.incomeperperson*100)/100 + "\n Alcohol consumption: " + Math.round(element.alcconsumption*100)/100 + "\n Employ rate: " + Math.round(element.employrate*100)/100)
+      .text(element.country + "\n Income per person: " + Math.round(element.incomeperperson*100)/100 + "\n Alcohol consumption: " + Math.round(element.alcconsumption*100)/100 + "\n Employ rate: " + Math.round(element.employrate*100)/100)
       ;
   });
 

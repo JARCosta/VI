@@ -59,7 +59,7 @@ function startDashboard() {
     createChoroplethMap();
     createTernaryPlot();
     createParallelCoordinates();
-    // createScatterPlot();
+    createScatterPlot();
     // createClevelandDotPlot();
   });
 }
@@ -168,7 +168,7 @@ function createChoroplethMap() {
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
     .attr("transform", `translate(${margin.left*0.625},-${margin.top*1})`)
-    .attr("style", `scale: 2`)
+    .attr("style", `scale: 1.5`)
   ;
 
   // Create a color scale for the Total values
@@ -189,19 +189,40 @@ function createChoroplethMap() {
   const path = d3.geoPath().projection(projection);
 
   // Add countries as path elements to the map
+  
   mapGroup
     .selectAll(".country")
     .data(globalDataCountries.features)
     .enter()
     .append("path")
-    .attr("class", "country data")
+    .attr("class", "choro data inactive")
+    .attr("id", "inactive")
     .attr("d", path)
     .attr("stroke", "black")
-    // .on("mouseover", handleMouseOver) // Function to handle mouseover event
-    // .on("mouseout", handleMouseOut)   // Function to handle mouseout event
-    .on("click", handleMouseOver)
+    .attr("stroke-opacity", 0.25)
+    .on("click", handleMouseClick)
     .append("title")
     .text((d) => d.properties.name);
+
+  mapGroup
+    .selectAll(".country")
+    .data(globalDataCountries.features)
+    .enter()
+    .append("path")
+    .attr("class", "choro data active")
+    .attr("id", "active")
+    .attr("d", path)
+    .attr("stroke", "steelblue")
+    .attr("stroke", "red")
+    .attr("stroke-opacity", 1)
+    .attr("active", true)
+    .attr("fill", "none")
+    .on("click", handleMouseClick)
+    .append("title")
+    .text((d) => d.properties.name);
+  
+
+
 
   // Set the fill color of each country based on its Total value
 
@@ -214,7 +235,7 @@ function createChoroplethMap() {
 
   currentData.forEach((element) => {
     mapGroup
-      .selectAll("path")
+      .selectAll(".inactive")
       .filter(function (d) {
         return d.properties.name == element.Country;
       })
@@ -290,52 +311,55 @@ function createChoroplethMap() {
   }
 }
 
+function getYearAverageData(data) {
+  // average values of current data where same coutry but differente year
+  const averageData = [];
+  data.forEach((element) => {
+    const country = element.Country;
+    const year = element.Year;
+    const cities = element.Cities;
+    const towns = element.Towns;
+    const urban = element.Urban;
+    const rural = element.Rural;
+    const totalEmissions = element["Total Emissions"];
+
+    const index = averageData.findIndex((d) => d.Country == country);
+
+    if (index == -1) {
+
+      averageData.push({
+        Country: country,
+        Year: year,
+        Cities: cities,
+        Towns: towns,
+        Urban: urban,
+        Rural: rural,
+        "Total emissions": totalEmissions,
+      });
+    }
+    else {
+      averageData[index].Cities = (averageData[index].Cities + cities)/2;
+      averageData[index].Towns = (averageData[index].Towns + towns)/2;
+      averageData[index].Urban = (averageData[index].Urban + urban)/2;
+      averageData[index].Rural = (averageData[index].Rural + rural)/2;
+      averageData[index]["Total emissions"] = (averageData[index]["Total emissions"] + totalEmissions)/2;
+    }
+  });
+  return averageData;
+}
+
 function createParallelCoordinates() {
   // Filter the data to remove entries with missing values
   currentData = globalData.filter(function (d) {
     return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== ".." && d.Towns !== ".." && d["Total Emissions"] !== "..";
   });
 
-    // average values of current data where same coutry but differente year
-    const averageData = [];
-    currentData.forEach((element) => {
-      const country = element.Country;
-      const year = element.Year;
-      const cities = element.Cities;
-      const towns = element.Towns;
-      const urban = element.Urban;
-      const rural = element.Rural;
-      const totalEmissions = element["Total Emissions"];
-  
-      const index = averageData.findIndex((d) => d.Country == country);
-  
-      if (index == -1) {
-  
-        averageData.push({
-          Country: country,
-          Year: year,
-          Cities: cities,
-          Towns: towns,
-          Urban: urban,
-          Rural: rural,
-          "Total emissions": totalEmissions,
-        });
-      }
-      else {
-        averageData[index].Cities = (averageData[index].Cities + cities)/2;
-        averageData[index].Towns = (averageData[index].Towns + towns)/2;
-        averageData[index].Urban = (averageData[index].Urban + urban)/2;
-        averageData[index].Rural = (averageData[index].Rural + rural)/2;
-        averageData[index]["Total emissions"] = (averageData[index]["Total emissions"] + totalEmissions)/2;
-      }
-    });
-
-  currentData = averageData;
+  currentData = getYearAverageData(currentData);
 
   // Set the dimensions and margins of the graph
   const margin = { top: 30, right: 10, bottom: 10, left: 30 };
-  const width = 600 - margin.left - margin.right;
-  const height = 400 - margin.top - margin.bottom;
+  const width = 600/1.2 - margin.left - margin.right;
+  const height = 800 - margin.top - margin.bottom;
   const padding = 28, brush_width = 20;
   var filters = {};
 
@@ -345,10 +369,10 @@ function createParallelCoordinates() {
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    .style("width", "-webkit-fill-available")
+    .attr("width", "-webkit-fill-available")
     // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`)
+    .attr("transform", `translate(-${5*margin.left},${margin.top})`)
     ;
 
   // Extract the list of dimensions from the data
@@ -360,7 +384,7 @@ function createParallelCoordinates() {
   for (const dim of dimensions) {
     yScale[dim] = d3
       .scaleLinear()
-      .domain([0,100])
+      .domain([0,90])
       .range([height, 0]);
   }
 
@@ -368,13 +392,13 @@ function createParallelCoordinates() {
 
   const xVerticalScale = d3
     .scaleBand()
-    .domain([0,100])
+    .domain([0,90])
     .range([0, height])
-    .padding(0.75);
+    .padding(0.845);
     ;
   const xVerticalAxis2 = d3
     .scaleLinear()
-    .domain([0,100])
+    .domain([0,90])
     .range([0, height])
     ;
 
@@ -386,7 +410,7 @@ function createParallelCoordinates() {
     var histogram = d3.histogram()
     .value(function(d) { return d[dim]; })
     .domain(yScale[dim].domain())
-    .thresholds(10);
+    .thresholds(20);
 
     var bins = histogram(data);
     return bins;
@@ -436,15 +460,26 @@ function createParallelCoordinates() {
   }
 
   const applyFilters = function () {
-    d3.select('g.active').selectAll('path')
-      .style('display', d => (selected(d) ? null : 'none'))
-      ;
-    d3.selectAll("circle")
-      .style('fill', d => (selected(d) ? 'red' : null))
-      ;
+
+    d3.selectAll('.choro.data.active')
+      .style('stroke-opacity', d => (selected(d) ? 1 : 0));
+    
+    d3.selectAll('.parallel.data')
+      .style('stroke-opacity', d => (selected(d) ? 1 : 0));
+    
   }
     
   const selected = function (d) {
+    
+    if(d.properties != undefined){
+      var country = d.properties.name;
+      // console.log(country);
+      var data = currentData.filter(d => d.Country == country);
+  
+      d = data[0];
+      if(d == undefined) return false;
+    }
+
     const _filters = Object.entries(filters);
     return _filters.every(f => {
       return f[1][1] <= d[f[0]] && d[f[0]] <= f[1][0];
@@ -468,41 +503,9 @@ function createParallelCoordinates() {
   const path = (d) => d3.line()(dimensions.map((p) => [xScale(p), yScale[p](d[p])]));
 
 
-  console.log(bins);
+  // console.log(bins);
   
-  yAxis = [];
-  for (const dim of dimensions) {
-    yAxis[dim] = svg
-      .append("g")
-      .attr("class", "yAxis")
-      ;
-  }
 
-  var counter = 1;
-  for (const dim of dimensions) {
-    yAxis[dim]
-      .append("g").attr('class', 'bars')
-      .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${224 * counter}px);`)
-      .selectAll(".rect")
-      .data(bins[dim])
-      .enter()
-      .append("rect")
-      .attr("class", "bar data")
-      
-      .attr("x", (d) => xVerticalAxis2(d.x0))
-      .attr("y", 0)
-      // .attr("country list", (d) => d.)
-      .attr("length", (d) => d.length)
-      
-      .attr("width", xVerticalScale.bandwidth())
-      .attr("height", (d) => yHistogramScales[dim](d.length))
-      
-      .attr("fill", "none")
-      .attr("stroke", "black")
-      .attr("stroke-width", 1.5)
-      .text((d) => d.title);
-    counter++;
-  }
 
 
 
@@ -526,9 +529,11 @@ function createParallelCoordinates() {
     .data(currentData)
     .enter()
     .append('path')
+    .attr("class", "parallel data")
+    .attr("id", "selectable")
     .attr('d', path)
     .attr('stroke', 'steelblue')
-    .attr("stroke-opacity", 0.5)
+    .attr("stroke-opacity", 1)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
     .style("transform", "scale(2,1)")
@@ -567,6 +572,40 @@ function createParallelCoordinates() {
   .attr("transform", "translate(0,-25)")
   .text(d=>d);
 
+  yAxis = [];
+  for (const dim of dimensions) {
+    yAxis[dim] = svg
+      .append("g")
+      .attr("class", "yAxis")
+      ;
+  }
+
+  var counter = 1;
+  for (const dim of dimensions) {
+    yAxis[dim]
+      .append("g").attr('class', 'bars')
+      .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${width/2.5 * counter}px);`)
+      .selectAll(".rect")
+      .data(bins[dim])
+      .enter()
+      .append("rect")
+      .attr("class", "bar data")
+      
+      .attr("x", (d) => xVerticalAxis2(d.x0))
+      .attr("y", 0)
+      // .attr("country list", (d) => d.)
+      .attr("length", (d) => d.length)
+      
+      .attr("width", xVerticalScale.bandwidth())
+      .attr("height", (d) => yHistogramScales[dim](d.length))
+      
+      .attr("fill", "lightgrey")
+      .attr("fill-opacity", 0.2)
+      .attr("stroke", "black")
+      .attr("stroke-width", 1.5)
+      .text((d) => d.title);
+    counter++;
+  }
 
 }
 
@@ -748,7 +787,7 @@ function createTernaryPlot() {
     .attr("stroke", (d) => yearColorScale(d.Year + 1))
     .attr("stroke-width", 2)
     .attr("stroke-opacity", 0.0)
-    .on("click", handleMouseOver)
+    .on("click", handleMouseClick)
     .append("title")
     .text((d) => d.Country);
   
@@ -759,6 +798,7 @@ function createTernaryPlot() {
     .enter()
     .append("circle")
     .attr("class", "ternary circle data")
+    .attr("id", "selectable")
     .attr("cx", (d) => xScale(convertToTernary(d).x))
     .attr("cy", (d) => yScale(convertToTernary(d).y))
     .attr("Rural", (d) => d.Rural)
@@ -772,7 +812,7 @@ function createTernaryPlot() {
     .attr("stroke", "black")
     .attr("stroke-width", 0.75)
     .attr("stroke-opacity", 0.33)
-    .on("click", handleMouseOver)
+    .on("click", handleMouseClick)
     .append("title")
     .text((d) => d.Country + " " + d.Year + "\n Towns: " + d.Towns + "\n Rural: " + d.Rural + "\n Urban: " + d.Urban + "\n Cities: " + d.Cities);
 
@@ -850,10 +890,10 @@ function createTernaryPlot() {
 // Function to create the scatter plot
 function createScatterPlot() {
   // Filter the data to remove entries with missing incomeperperson or alcconsumption values
-  currentData = globalDataCapita.filter(function (d) {
-    return d.incomeperperson != "" && d.alcconsumption != "";
+  currentData = globalData.filter(function (d) {
+    return d["GDP"] != 0 && d["GDP"] != ".." && d["Age: All Ages"] != "..";
   });
-
+  
   // Create an SVG element to hold the scatter plot
   const svg = d3
     .select("#scatterPlot")
@@ -867,16 +907,16 @@ function createScatterPlot() {
   const xScale = d3
     .scaleLog()
     .domain([
-      d3.min(currentData, (d) => d.incomeperperson),
-      d3.max(currentData, (d) => d.incomeperperson),
+      d3.min(currentData, (d) => d["GDP"]),
+      d3.max(currentData, (d) => d["GDP"]),
     ])
     .range([0, width]);
 
   const yScale = d3
     .scaleLinear()
     .domain([
-      d3.min(currentData, (d) => d.alcconsumption),
-      d3.max(currentData, (d) => d.alcconsumption),
+      d3.min(currentData, (d) => d["Age: All Ages"]),
+      d3.max(currentData, (d) => d["Age: All Ages"]),
     ])
     .range([height, 0]);
 
@@ -887,15 +927,15 @@ function createScatterPlot() {
     .enter()
     .append("circle")
     .attr("class", "circle data")
-    .attr("cx", (d) => xScale(d.incomeperperson))
-    .attr("cy", (d) => yScale(d.alcconsumption))
-    .attr("r", 5)
+    .attr("id", "selectable")
+    .attr("cx", (d) => xScale(d["GDP"]))
+    .attr("cy", (d) => yScale(d["Age: All Ages"]))
+    .attr("r", 2.5)
     .attr("fill", "steelblue")
     .attr("stroke", "black")
-    // .on("mouseover", handleMouseOver) // Function to handle mouseover event
-    // .on("mouseout", handleMouseOut)   // Function to handle mouseout event
+    // on("click", handleMouseClick)
     .append("title")
-    .text((d) => d.country);
+    .text((d) => d.Country + " " + d["Age: All Ages"]);
 
   // Create tick marks and labels for the x and y axes
   var xTicks = [];
@@ -935,7 +975,7 @@ function createScatterPlot() {
     .attr("x", width / 2)
     .attr("y", height + margin.top + 20)
     .style("text-anchor", "middle")
-    .text("Income per person");
+    .text("GDP");
 
   svg
     .append("text")
@@ -944,147 +984,7 @@ function createScatterPlot() {
     .attr("y", -margin.left + 30)
     .style("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
-    .text("Alcohol Consumption");
+    .text("Age: All Ages");
 }
 
-function createClevelandDotPlot() {
-  // Filter the data to remove entries with missing femaleemployrate, hivrate or internetuserate values
-  currentData = globalDataCapita.filter(function (d) {
-    return d.femaleemployrate != "" && d.hivrate != "" && d.internetuserate != "";
-  });
 
-  
-  // Create an SVG element to hold the scatter plot
-  const svg = d3
-    .select("#clevelandPlot")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height*4 + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
-
-  // Create x and y scales for the scatter plot
-  const xScale_femaleemployrate = d3
-    .scaleLinear()
-    .domain([
-      d3.min(currentData, (d) => d.femaleemployrate),
-      d3.max(currentData, (d) => d.femaleemployrate),
-    ])
-    .range([0, width]);
-
-  const xScale_hivrate = d3
-    .scaleLinear()
-    .domain([
-      d3.min(currentData, (d) => d.hivrate),
-      d3.max(currentData, (d) => d.hivrate),
-    ])
-    .range([0, width]);
-
-  const xScale_internetuserate = d3
-    .scaleLinear()
-    .domain([
-      d3.min(currentData, (d) => d.internetuserate),
-      d3.max(currentData, (d) => d.internetuserate),
-    ])
-    .range([0, width]);
-
-
-  const yScale = d3
-    .scaleBand()
-    .domain(currentData.map((d) => d.country))
-    .range([0, height*4])
-    .padding(0.2);
-
-  // Lines
-  svg.selectAll("myline")
-    .data(currentData)
-    .enter()
-    .append("line")
-      .attr("x1", function(d) { return xScale_femaleemployrate(d.femaleemployrate)+4; })
-      .attr("x2", function(d) { return xScale_hivrate(d.hivrate)+4; })
-      .attr("y1", function(d) { return yScale(d.country)+4; })
-      .attr("y2", function(d) { return yScale(d.country)+4; })
-      .attr("stroke", "grey")
-      .attr("stroke-width", "1px")
-  
-  // Lines
-  svg.selectAll("myline")
-    .data(currentData)
-    .enter()
-    .append("line")
-      .attr("x1", function(d) { return xScale_hivrate(d.hivrate)+4; })
-      .attr("x2", function(d) { return xScale_internetuserate(d.internetuserate)+4; })
-      .attr("y1", function(d) { return yScale(d.country)+4; })
-      .attr("y2", function(d) { return yScale(d.country)+4; })
-      .attr("stroke", "grey")
-      .attr("stroke-width", "1px")
-
-  // Circles of variable 1
-  svg.selectAll("mycircle")
-    .data(currentData)
-    .enter()
-    .append("circle")
-      .attr("cx", function(d) { return xScale_femaleemployrate(d.femaleemployrate)+4; })
-      .attr("cy", function(d) { return yScale(d.country)+4; })
-      .attr("r", "6")
-      .style("fill", "#aa0000")
-
-  // Circles of variable 1
-  svg.selectAll("mycircle")
-    .data(currentData)
-    .enter()
-    .append("circle")
-      .attr("cx", function(d) { return xScale_hivrate(d.hivrate)+4; })
-      .attr("cy", function(d) { return yScale(d.country)+4; })
-      .attr("r", "6")
-      .style("fill", "#00aa00")
-
-  // Circles of variable 1
-  svg.selectAll("mycircle")
-    .data(currentData)
-    .enter()
-    .append("circle")
-      .attr("cx", function(d) { return xScale_internetuserate(d.internetuserate)+4; })
-      .attr("cy", function(d) { return yScale(d.country)+4; })
-      .attr("r", "6")
-      .style("fill", "#0000aa")
-
-
-
-  svg
-    .append("g")
-    .attr("class", "x-axis")
-    .attr("transform", `translate(0,${height*4})`)
-    .call(
-      d3
-        .axisBottom(xScale_femaleemployrate)
-        .tickSizeOuter(0)
-    );
-
-  svg
-    .append("g")
-    .attr("class", "y-axis")
-    .call(
-      d3
-        .axisLeft(yScale)
-        .tickSizeOuter(0)
-    );
-
-  // Add labels for the x and y axes
-  svg
-    .append("text")
-    .attr("class", "x-axis-label")
-    .attr("x", width / 2)
-    .attr("y", height*4 + margin.top + 20)
-    .style("text-anchor", "middle")
-    .text("femaleemployrate");
-
-  svg
-    .append("text")
-    .attr("class", "y-axis-label")
-    .attr("x", -height*4 / 2)
-    .attr("y", -margin.left + 10)
-    .style("text-anchor", "middle")
-    .attr("transform", "rotate(-90)")
-    .text("hivrate");
-}
