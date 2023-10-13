@@ -2,6 +2,8 @@
 var globalDataCountries;
 var globalDataCapita;
 var globalData;
+var country_selection = [];
+var applyFilters;
 const yearColorScale = d3.scaleSequential(d3.interpolateBlues)
   .domain([2010, 2019])
   .range(["#ffffff", "#08306b"]);
@@ -55,13 +57,11 @@ function startDashboard() {
     });
     
     // Call functions to create the choropleth map and scatter plot
-    createYearFilter();
+    // createYearFilter();
     createChoroplethMap();
-    createTernaryPlot();
     createParallelCoordinates();
-    createScatterPlot();
     createTreeMap();
-    // createClevelandDotPlot();
+    createStreamGraph();
   });
 }
 
@@ -152,7 +152,7 @@ function createChoroplethMap() {
     .append("text")
     .attr("x", width / 2)
     .attr("y", margin.top)
-    .text("Income per person");
+    .text("Average AQI Values per country");
     
   // Create an SVG element to hold the map
   const svg = d3
@@ -174,7 +174,7 @@ function createChoroplethMap() {
     .scaleLog()
     .domain([
       d3.min(currentData, (d) => d.Total),
-      d3.max(currentData, (d) => d.Total),
+      90,
     ])
     .range([0, 1]);
 
@@ -194,7 +194,6 @@ function createChoroplethMap() {
     .enter()
     .append("path")
     .attr("class", "choro data inactive")
-    .attr("id", "inactive")
     .attr("d", path)
     .attr("stroke", "steelblue")
     .attr("stroke-opacity", 1)
@@ -209,7 +208,7 @@ function createChoroplethMap() {
     .enter()
     .append("path")
     .attr("class", "choro data active")
-    .attr("id", "active")
+    .attr("id", "selectable")
     .attr("d", path)
     .attr("stroke", "steelblue")
     .attr("stroke-opacity", 1)
@@ -454,19 +453,26 @@ function createParallelCoordinates() {
       if (feature in filters)
         delete (filters[feature]);
     }
-    console.log(filters)
     applyFilters();
   }
 
-  const applyFilters = function () {
+  applyFilters = function () {
+
+    function count_trues() {
+      var count = 0;
+      for (const d in country_selection) {
+        if(country_selection[d] == true) count++;
+      }
+      return count;
+    }
 
     d3.selectAll('.choro.data.active')
-      .style('stroke-opacity', d => (selected(d) ? 1 : 0))
-      .style('fill-opacity', d => (selected(d) ? 1 : 0))
+      .style('stroke-opacity', d => (selected(d) && (country_selection[d.properties.name] == true || count_trues() == 0) ? 1 : 0))
+      .style('fill-opacity', d => (selected(d) && (country_selection[d.properties.name] == true || count_trues() == 0 ) ? 1 : 0))
       ;
     
     d3.selectAll('.parallel.data')
-      .style('stroke-opacity', d => (selected(d) ? 1 : 0));
+      .style('stroke-opacity', d => (selected(d) && ( country_selection[d.Country] == true || count_trues() == 0 ) ? 1 : 0));
     
   }
     
@@ -1018,4 +1024,29 @@ function createTreeMap() {
   //   ;
 }
 
+function createStreamGraph() {
+  currentData = getYearAverageData(globalData)
 
+  const width = 600;
+  const height = 400;
+
+  // Create an SVG element to hold the tree map
+  const svg = d3
+    .select("#streamGraph")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", `translate(${0},${0})`);
+
+
+
+  // // Create main background rectangles
+  // svg
+  //   .append("rect")
+  //   .attr("width", width)
+  //   .attr("height", height)
+  //   .attr("fill", "white")
+  //   .attr("fill-opacity", 0.25)
+  //   ;
+}

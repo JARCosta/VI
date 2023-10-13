@@ -3,57 +3,47 @@
 function handleMouseClick(event, item) {
   // Select all elements with class "country.data" and filter based on the item's properties
 
-
-  d3.selectAll("#selectable")
-    .filter(function (d) {
-      classed = d3.select(this).classed("selected");
-      return !classed;
-    })
-    .attr("stroke-opacity", 0)
-    ;
-
-  d3.selectAll("#selectable")
-    .filter(function (d) {
-      // Check if "properties" exist in both item and d objects
-      if ("properties" in item) {
-        if ("properties" in d) return item.properties.name == d.properties.name;
-        else return item.properties.name == d.Country;
-      } else if ("properties" in d) {
-        return item.Country == d.properties.name;
-      } else {
-        return item.Country == d.Country;
-      }
-    })
-    .each(function() {
-      var selected = d3.select(this).classed("selected"); // Check if already selected
-      if (selected) {
-        // Country is already selected, so deselect it
-        d3.select(this)
-          .classed("selected", false)
-          // .attr("stroke", "black")
-          .attr("stroke-opacity", 0)
-          ;
-      } else {
-        // Country is not selected, so select it
-        d3.select(this)
-          .classed("selected", true)
-          // .attr("stroke", "steelblue")
-          .attr("stroke-opacity", 1)
-          .raise()
-          ;
-      }
-    });
-
-
-  var selected = d3.selectAll("#selectable").filter(function (d) {
-    var selected = d3.select(this).classed("selected"); // Check if already selected
-    return selected;
-  })._groups[0].length;
-  
-  console.log(selected);
-  if (selected == 0) {
-    d3.selectAll("#selectable")
-      .attr("stroke-opacity", 1)
-      ;
+  if(country_selection[item.properties.name] != true) {
+    country_selection[item.properties.name] = true;
+  } else {
+    country_selection[item.properties.name] = false;
   }
+
+  d3.selectAll("#selectable")
+    .filter(function (d) {
+      if(d.properties != undefined) {
+        return country_selection[d.properties.name] == true;
+      } else {
+        return country_selection[d.Country] == true;
+      }
+    })
+    .attr("fill-opacity", 1)
+    .attr("stroke-opacity", 1);
+
+  d3.selectAll(".choro.data.active").filter(function (d) {
+    if(d.properties != undefined) {
+      return country_selection[d.properties.name] != true;
+    } else {
+      return country_selection[d.Country] != true;
+    }
+  })
+  .attr("fill-opacity", 0)
+  ;
+
+  d3.selectAll(".parallel.data").filter(function (d) {
+    if(d.properties != undefined) {
+      return country_selection[d.properties.name] != true;
+    } else {
+      return country_selection[d.Country] != true;
+    }
+  })
+  .attr("stroke-opacity", 0)
+  ;
+
+  const test = d3.selectAll("#selectable")
+    .filter(function (d) {
+      return country_selection[d.Country] == true;
+    })
+  applyFilters();
+
 }
