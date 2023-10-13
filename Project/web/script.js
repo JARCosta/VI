@@ -60,15 +60,13 @@ function startDashboard() {
     createTernaryPlot();
     createParallelCoordinates();
     createScatterPlot();
+    createTreeMap();
     // createClevelandDotPlot();
   });
 }
 
 function createYearFilter() {
   currentData = globalData
-
-
-
 
   // Create a legend for the choropleth map
   const svg2 = d3
@@ -145,7 +143,7 @@ function createChoroplethMap() {
   currentData = globalDataCapita.filter(function (d) {
     return d.incomeperperson != "";
   });
-  currentData = globalData
+  currentData = globalData;
   // console.log(currentData)
 
   // Create a title for the choropleth map
@@ -160,14 +158,14 @@ function createChoroplethMap() {
   const svg = d3
     .select("#choropleth")
     .append("svg")
-    .attr("width", width + margin.left + margin.right)
+    .attr("width", width*1.3 + margin.left + margin.right)
     .attr("height", height + margin.bottom)
     .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     ;
 
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
-    .attr("transform", `translate(${margin.left*0.625},-${margin.top*1})`)
+    .attr("transform", `translate(${margin.left*0.1},-${margin.top*1})`)
     .attr("style", `scale: 1.5`)
   ;
 
@@ -198,8 +196,9 @@ function createChoroplethMap() {
     .attr("class", "choro data inactive")
     .attr("id", "inactive")
     .attr("d", path)
-    .attr("stroke", "black")
-    .attr("stroke-opacity", 0.25)
+    .attr("stroke", "steelblue")
+    .attr("stroke-opacity", 1)
+    .attr("stroke-width", 0.25)
     .on("click", handleMouseClick)
     .append("title")
     .text((d) => d.properties.name);
@@ -213,10 +212,10 @@ function createChoroplethMap() {
     .attr("id", "active")
     .attr("d", path)
     .attr("stroke", "steelblue")
-    .attr("stroke", "red")
     .attr("stroke-opacity", 1)
+    .attr("stroke-width", 0.25)
+    .attr("fill-opacity", 1)
     .attr("active", true)
-    .attr("fill", "none")
     .on("click", handleMouseClick)
     .append("title")
     .text((d) => d.properties.name);
@@ -226,21 +225,24 @@ function createChoroplethMap() {
 
   // Set the fill color of each country based on its Total value
 
+  
+  
+  mapGroup
+    .selectAll(".inactive")
+    .attr("fill", "#fff0db");
+  mapGroup
+    .selectAll(".active")
+    .attr("fill", "#fff0db");
+  
+  
   currentData.forEach((element) => {
     mapGroup
-      .selectAll("path")
-      .attr("fill", "transparent");
-      // console.log(element.Total);
-  });
-
-  currentData.forEach((element) => {
-    mapGroup
-      .selectAll(".inactive")
+      .selectAll(".active")
       .filter(function (d) {
         return d.properties.name == element.Country;
       })
       .attr("fill", function (d) {
-        return element.Total != ".." ? d3.interpolateBlues(colorScale(element.Total)) : "transparent";
+        return element.Total != ".." ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "#fff0db";
       });
       // console.log(element.Total);
   });
@@ -249,10 +251,10 @@ function createChoroplethMap() {
   const zoom = d3
     .zoom()
     .scaleExtent([1, 8])
-    .translateExtent([
-      [0, height/16],
-      [width, height*1.5],
-    ])
+    // .translateExtent([
+    //   [0, width],
+    //   [height*1.8, 0],
+    // ])
     .on("zoom", zoomed);
 
   // Apply zoom behavior to the SVG element
@@ -283,12 +285,12 @@ function createChoroplethMap() {
   gradient
     .append("stop")
     .attr("offset", "0%")
-    .attr("stop-color", d3.interpolateBlues(0));
+    .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(0));
 
   gradient
     .append("stop")
     .attr("offset", "100%")
-    .attr("stop-color", d3.interpolateBlues(1));
+    .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(1));
 
   // Create the legend rectangle filled with the color scale gradient
   const legend = svg2.append("g").attr("transform", `translate(0, 40)`);
@@ -316,7 +318,6 @@ function getYearAverageData(data) {
   const averageData = [];
   data.forEach((element) => {
     const country = element.Country;
-    const year = element.Year;
     const cities = element.Cities;
     const towns = element.Towns;
     const urban = element.Urban;
@@ -329,7 +330,6 @@ function getYearAverageData(data) {
 
       averageData.push({
         Country: country,
-        Year: year,
         Cities: cities,
         Towns: towns,
         Urban: urban,
@@ -345,6 +345,7 @@ function getYearAverageData(data) {
       averageData[index]["Total emissions"] = (averageData[index]["Total emissions"] + totalEmissions)/2;
     }
   });
+  // console.log(averageData.filter(d => d.Country == "Russia"));
   return averageData;
 }
 
@@ -354,12 +355,12 @@ function createParallelCoordinates() {
     return d.Cities !== ".." && d.Rural !== ".." && d.Urban !== ".." && d.Towns !== ".." && d["Total Emissions"] !== "..";
   });
 
-  currentData = getYearAverageData(currentData);
+  averageData = getYearAverageData(currentData);
 
   // Set the dimensions and margins of the graph
   const margin = { top: 30, right: 10, bottom: 10, left: 30 };
-  const width = 600/1.2 - margin.left - margin.right;
-  const height = 800 - margin.top - margin.bottom;
+  const width = 600/1.75 - margin.left - margin.right;
+  const height = 400*2.35 - margin.top - margin.bottom;
   const padding = 28, brush_width = 20;
   var filters = {};
 
@@ -372,7 +373,7 @@ function createParallelCoordinates() {
     .attr("width", "-webkit-fill-available")
     // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     .append("g")
-    .attr("transform", `translate(-${5*margin.left},${margin.top})`)
+    .attr("transform", `translate(-${height*0.1},${margin.top})`)
     ;
 
   // Extract the list of dimensions from the data
@@ -388,8 +389,6 @@ function createParallelCoordinates() {
       .range([height, 0]);
   }
 
-
-
   const xVerticalScale = d3
     .scaleBand()
     .domain([0,90])
@@ -404,7 +403,6 @@ function createParallelCoordinates() {
 
   // Build the X scale
   const xScale = d3.scalePoint().range([0, width]).padding(1).domain(dimensions);
-
 
   function histogram2(data, dim) {
     var histogram = d3.histogram()
@@ -425,7 +423,7 @@ function createParallelCoordinates() {
 
   var bins = [];
   for (const dim of dimensions) {
-    bins[dim] = histogram2(currentData, dim);
+    bins[dim] = histogram2(averageData, dim);
   }
 
 
@@ -456,13 +454,16 @@ function createParallelCoordinates() {
       if (feature in filters)
         delete (filters[feature]);
     }
+    console.log(filters)
     applyFilters();
   }
 
   const applyFilters = function () {
 
     d3.selectAll('.choro.data.active')
-      .style('stroke-opacity', d => (selected(d) ? 1 : 0));
+      .style('stroke-opacity', d => (selected(d) ? 1 : 0))
+      .style('fill-opacity', d => (selected(d) ? 1 : 0))
+      ;
     
     d3.selectAll('.parallel.data')
       .style('stroke-opacity', d => (selected(d) ? 1 : 0));
@@ -470,12 +471,12 @@ function createParallelCoordinates() {
   }
     
   const selected = function (d) {
-    
+
     if(d.properties != undefined){
       var country = d.properties.name;
       // console.log(country);
-      var data = currentData.filter(d => d.Country == country);
-  
+      var data = averageData.filter(d => d.Country == country);
+      
       d = data[0];
       if(d == undefined) return false;
     }
@@ -508,14 +509,17 @@ function createParallelCoordinates() {
 
 
 
+  const colorScale = d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])
+  ;
+
 
   // Inactive data
   svg.append('g').attr('class', 'inactive').selectAll('path')
-    .data(currentData)
+    .data(averageData)
     .enter()
     .append('path')
     .attr('d', path)
-    .attr('stroke', '#888')
+    .attr('stroke', 'lightgrey')
     .attr("stroke-opacity", 0.25)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
@@ -526,13 +530,13 @@ function createParallelCoordinates() {
   
   // Active data
   svg.append('g').attr('class', 'active').selectAll('path')
-    .data(currentData)
+    .data(averageData)
     .enter()
     .append('path')
     .attr("class", "parallel data")
     .attr("id", "selectable")
     .attr('d', path)
-    .attr('stroke', 'steelblue')
+    .attr('stroke', (d) => colorScale((d.Cities+d.Towns+d.Urban+d.Rural)/d3.max(averageData, d => (d.Cities+d.Towns+d.Urban+d.Rural))))
     .attr("stroke-opacity", 1)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
@@ -985,6 +989,33 @@ function createScatterPlot() {
     .style("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
     .text("Age: All Ages");
+}
+
+function createTreeMap() {
+  currentData = getYearAverageData(globalData)
+
+  const width = 400;
+  const height = 400;
+
+  // Create an SVG element to hold the tree map
+  const svg = d3
+    .select("#treeMap")
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", `translate(${0},${0})`);
+
+
+
+  // // Create main background rectangles
+  // svg
+  //   .append("rect")
+  //   .attr("width", width)
+  //   .attr("height", height)
+  //   .attr("fill", "white")
+  //   .attr("fill-opacity", 0.25)
+  //   ;
 }
 
 

@@ -6,6 +6,14 @@ function handleMouseClick(event, item) {
 
   d3.selectAll("#selectable")
     .filter(function (d) {
+      classed = d3.select(this).classed("selected");
+      return !classed;
+    })
+    .attr("stroke-opacity", 0)
+    ;
+
+  d3.selectAll("#selectable")
+    .filter(function (d) {
       // Check if "properties" exist in both item and d objects
       if ("properties" in item) {
         if ("properties" in d) return item.properties.name == d.properties.name;
@@ -22,14 +30,14 @@ function handleMouseClick(event, item) {
         // Country is already selected, so deselect it
         d3.select(this)
           .classed("selected", false)
-          .attr("stroke", "black")
-          .attr("stroke-opacity", 0.25)
+          // .attr("stroke", "black")
+          .attr("stroke-opacity", 0)
           ;
       } else {
         // Country is not selected, so select it
         d3.select(this)
           .classed("selected", true)
-          .attr("stroke", "red")
+          // .attr("stroke", "steelblue")
           .attr("stroke-opacity", 1)
           .raise()
           ;
@@ -37,10 +45,15 @@ function handleMouseClick(event, item) {
     });
 
 
-    var selected = d3.selectAll("#selectable").filter(function (d) {
-      var selected = d3.select(this).classed("selected"); // Check if already selected
-      return selected;
-    })._groups[0].length;
+  var selected = d3.selectAll("#selectable").filter(function (d) {
+    var selected = d3.select(this).classed("selected"); // Check if already selected
+    return selected;
+  })._groups[0].length;
   
-    console.log(selected);
+  console.log(selected);
+  if (selected == 0) {
+    d3.selectAll("#selectable")
+      .attr("stroke-opacity", 1)
+      ;
+  }
 }

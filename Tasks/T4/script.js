@@ -123,7 +123,7 @@ function createChoroplethMap() {
       })
       .attr("fill", d3.interpolateBlues(colorScale(element.incomeperperson)))
       .append("title")
-      .text(element.country + "\n Income per person: " + Math.round(element.incomeperperson*100)/100 + "\n Alcohol consumption: " + Math.round(element.alcconsumption*100)/100 + "\n Employ rate: " + Math.round(element.employrate*100)/100)
+      .text(element.country + "\n Income per person: " + Math.round(element.incomeperperson*100)/100 + "\n Alcohol consumption: " + Math.round(element.alcconsumption*100)/100 + "\n Employ rate: " + Math.round(element.employrate*100)/100 + "\n Female employ rate: " + element.femaleemployrate)
       ;
   });
 
@@ -242,7 +242,7 @@ function createScatterPlot() {
     .on("mouseout", handleMouseOut)   // Function to handle mouseout event
     .on("click", handleMouseClick)    // Function to handle mouseclick event
     .append("title")
-    .text((d) => d.country + "\n Income per person: " + Math.round(d.incomeperperson*100)/100 + "\n Alcohol consumption: " + Math.round(d.alcconsumption*100)/100 + "\n Employ rate: " + Math.round(d.employrate*100)/100)
+    .text((d) => d.country + "\n Income per person: " + Math.round(d.incomeperperson*100)/100 + "\n Alcohol consumption: " + Math.round(d.alcconsumption*100)/100 + "\n Employ rate: " + Math.round(d.employrate*100)/100 + "\n Female employ rate: " + d.femaleemployrate)
     ;
     // .text((d) => d.country);
 

@@ -50,7 +50,7 @@ function handleMouseOut(event, item) {
 
 function handleMouseClick(event, item) {
 
-  console.log(item);
+  // console.log(item);
 
   var country = "";
   if(item.properties == undefined) {
@@ -67,13 +67,17 @@ function handleMouseClick(event, item) {
   } else {
     d3.select("tbody")
     .append("tr")
-    .append("td")
+    .append("g")
     .attr("class", country)
-    .text(country);
+    .on("click", console.log("clicked"))
+    .append("td")
+    // .attr("class", country)
+    .text(country)
+    .attr("class", country);
     selected[country] = country;
   }
   
-  console.log(selected);
+  // console.log(selected);
   
   selected[country] = country;
   // console.log(selected);
