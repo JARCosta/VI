@@ -23,15 +23,15 @@
                     "year tree parallel"
                     "choro tree parallel"
                     "stream stream parallel";
-                gap: 20px;
-                padding: 20px;
+                gap: 10px;
+                /* padding: 20px; */
             }
             .visualization {
                 padding: 0px;
             }
-            #yearSelector {
+            #lineChart {
                 grid-area: year;
-                height: 30px;
+                height: 40px;
                 /* width: fit-content; */
             }
             #choropleth {
@@ -61,7 +61,7 @@
     </head>
     <body onload="startDashboard()" style="background-color: #54738C;">
         <div class="dashboard">
-            <div class="visualization" id="yearSelector" style="background-color: #fff1;"></div>
+            <div class="visualization" id="lineChart" style="background-color: #fff1;"></div>
             <div class="container" style="background-color: #fff1; width: fit-content;">
                 <div >
                     <div id="choroplethTitle"></div>

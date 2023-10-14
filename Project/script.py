@@ -60,14 +60,15 @@ def main():
                     df.drop(columns=['Code'], inplace=True)
                     df.rename(columns={
                         "Entity": "Country",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: All Ages (Rate)": "Age: All Ages",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: Under 5 (Rate)": "Age: Under 5",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 5-14 years (Rate)": "Age: 5-14 years",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 15-49 years (Rate)": "Age: 15-49 years",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 50-69 years (Rate)": "Age: 50-69 years",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 70+ years (Rate)": "Age: 70+ years",
-                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: Age-standardized (Rate)": "Age: Age-standardized"
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: All Ages (Rate)": "All_Ages",
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: Under 5 (Rate)": "Under_5",
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 5-14 years (Rate)": "5-14_years",
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 15-49 years (Rate)": "15-49_years",
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 50-69 years (Rate)": "50-69_years",
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: 70+ years (Rate)": "70+_years",
+                        "Deaths - Chronic respiratory diseases - Sex: Both - Age: Age-standardized (Rate)": "Age-standardized"
                         }, inplace=True)
+                    df.drop(columns=['All_Ages', 'Under_5', '5-14_years', '15-49_years', '50-69_years', '70+_years'], inplace=True)
                     for i in list(df.head(0))[2:]:
                         df[i] = df[i].apply(np.ceil)
                     df["Country"] = df["Country"].str.replace("East Timor", "Timor-Leste", regex=True)
@@ -75,9 +76,15 @@ def main():
 
                 elif(i.startswith("3-")):
                     df.drop(columns=['Code', 'Land-use change and forestry'], inplace=True)
-                    df.rename(columns={'Entity': 'Country'}, inplace=True)
+                    df.rename(columns={'Entity': 'Country',
+                                       'Manufacturing and construction': 'Manufacturing_and_construction',
+                                       'Electricity and heat': 'Electricity_and_heat',
+                                       'Fugitive emissions': 'Fugitive_emissions',
+                                       'Other fuel combustion': 'Other_fuel_combustion',
+                                       'Aviation and shipping': 'Aviation_and_shipping',
+                                       }, inplace=True)
                     # df.fillna(0, inplace=True)
-                    df['Total emissions'] = df.sum(axis=1, numeric_only=True)
+                    df['Total_Emissions'] = df.sum(axis=1, numeric_only=True)
                     dfs[1] = df
 
                 elif(i.startswith("4-")):
@@ -161,8 +168,8 @@ def main():
 
     merged["Year"] = merged["Year"].astype(int)
 
-    merged = merged.merge(dfs[3], on=['Country', 'Year'], how='outer')
-    merged = merged.fillna("..")
+    # merged = merged.merge(dfs[3], on=['Country', 'Year'], how='outer')
+    # merged = merged.fillna("..")
 
     # add continent column
     merged["Continent"] = ""
