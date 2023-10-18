@@ -4,6 +4,7 @@ var globalData;
 var filteredData;
 var country_selection = [];
 var applyFilters;
+var histogramData;
 
 var year_range = [2010, 2019];
 
@@ -54,10 +55,10 @@ function startDashboard() {
     // Call functions to create the choropleth map and scatter plot
     // createYearFilter();
     createLineShart();
-    // createChoroplethMap();
-    // createParallelCoordinates();
-    // createTreeMap();
-    // createStreamGraph();
+    createChoroplethMap();
+    createParallelCoordinates();
+    createTreeMap();
+    createStreamGraph();
   });
 }
 
@@ -187,18 +188,21 @@ function createLineShart() {
 
   function brushed(event) {
     if (event.sourceEvent && event.sourceEvent.type === "zoom")
-      return; // ignore brush-by-zoom
-    if (event.selection != null) {
-      year_range =  event.selection.map(d => xScale.invert(d));
-      filteredData = globalData.filter(d => d.Year >= year_range[0] && d.Year <= year_range[1]);
-      d3.select("#choropleth").selectAll("svg").remove();
-      createChoroplethMap();
-      d3.select("#parallelCoordinates").selectAll("svg").remove();
-      createParallelCoordinates();
-      d3.select("#streamGraph").selectAll("svg").remove();
-      createStreamGraph();
-      d3.select("#treeMap").selectAll("svg").remove();
-      createTreeMap();
+    return; // ignore brush-by-zoom
+  if (event.selection != null) {
+      new_range = [Math.ceil(xScale.invert(event.selection[0])), Math.floor(xScale.invert(event.selection[1]))]
+      if (new_range[0] != year_range[0] || new_range[1] != year_range[1]){
+        year_range = new_range;
+        filteredData = globalData.filter(d => d.Year >= year_range[0] && d.Year <= year_range[1]);
+        d3.select("#choropleth").selectAll("svg").remove();
+        createChoroplethMap();
+        d3.select("#parallelCoordinates").selectAll("svg").remove();
+        createParallelCoordinates();
+        d3.select("#streamGraph").selectAll("svg").remove();
+        createStreamGraph();
+        d3.select("#treeMap").selectAll("svg").remove();
+        createTreeMap();
+      }
     } else {
       year_range = [2010, 2019];
     }
@@ -264,6 +268,7 @@ function createChoroplethMap() {
     .attr("stroke", "steelblue")
     .attr("stroke-opacity", 1)
     .attr("stroke-width", 0.25)
+    .attr("fill-opacity", 0.5)
     .on("click", handleMouseClick)
     .append("title")
     .text((d) => d.properties.name);
@@ -297,12 +302,20 @@ function createChoroplethMap() {
     .attr("fill", "#fff0db");
   mapGroup
     .selectAll(".active")
-    .attr("fill", "#fff0db");
+    .attr("fill", "none");
   
   
   currentData.forEach((element) => {
     mapGroup
       .selectAll(".active")
+      .filter(function (d) {
+        return d.properties.name == element.Country;
+      })
+      .attr("fill", function (d) {
+        return element.Total != ".." ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "none";
+      });
+    mapGroup
+      .selectAll(".inactive")
       .filter(function (d) {
         return d.properties.name == element.Country;
       })
@@ -351,17 +364,17 @@ function createChoroplethMap() {
     gradient
       .append("stop")
       .attr("offset", "0%")
-      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(0));
-    
-    gradient
+      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(1));
+      
+      gradient
       .append("stop")
       .attr("offset", "50%")
       .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(0.5));
-
-    gradient
+      
+      gradient
       .append("stop")
       .attr("offset", "100%")
-      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(1));
+      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(0));
 
     // Create the legend rectangle filled with the color scale gradient
     const legend = svg2.append("g").attr("transform", `translate(0, 40)`);
@@ -379,7 +392,7 @@ function createChoroplethMap() {
       legend
         .append("text")
         .attr("x", legendWidth + 5)
-        .attr("y", legendHeight * index)
+        .attr("y", legendHeight * (1-index) * 0.955 + 12)
         .text(Math.round(colorScale.invert(index)));
     }
   }
@@ -454,7 +467,7 @@ function createParallelCoordinates() {
     ;
 
   // Extract the list of dimensions from the data
-  const dimensions = ["Cities", "Towns", "Urban", "Rural"];
+  const dimensions = ["Cities", "Urban", "Towns", "Rural"];
 
   // Create a scale for each dimension
   const yScale = {};
@@ -493,6 +506,7 @@ function createParallelCoordinates() {
 
   var bins = [];
   for (const dim of dimensions) {
+    // console.log(averageData);
     bins[dim] = histogram2(averageData, dim);
   }
 
@@ -535,8 +549,45 @@ function createParallelCoordinates() {
       ;
     
     d3.selectAll('.parallel.data')
-      .style('stroke-opacity', d => (selected(d) && ( country_selection[d.Country] == true || count_trues() == 0 ) ? 1 : 0));
-    
+      .style('stroke-opacity', d => (selected(d) && ( country_selection[d.Country] == true || count_trues() == 0 ) ? 1 : 0))
+      ;
+
+    averageData.forEach((element) => {
+      if(selected(element) && ( country_selection[element.Country] == true || count_trues() == 0 )){
+        element.selected = true;
+      } else {
+        element.selected = false;
+      }
+    });
+
+    d3.selectAll(".bar.data").remove();
+
+    // console.log(averageData.filter( d => d.selected == true));
+
+    var counter = 1;
+    for (const dim of dimensions) {
+      yAxis[dim]
+        .append("g").attr('class', 'bars')
+        .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${width/2.5 * counter}px);`)
+        .selectAll(".rect")
+        .data(histogram2(averageData.filter( d => d.selected == true), dim))
+        .enter()
+        .append("rect")
+        .attr("class", "bar data")
+        
+        .attr("x", (d) => xVerticalAxis2(d.x0))
+        .attr("y", 0)
+        
+        .attr("width", xVerticalScale.bandwidth())
+        .attr("height", (d) => yHistogramScales[dim](d.length))
+        
+        .attr("fill", "lightgrey")
+        .attr("fill-opacity", 0.2)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1.5)
+        .text((d) => d.title);
+      counter++;
+    }
   }
     
   const selected = function (d) {
@@ -588,7 +639,7 @@ function createParallelCoordinates() {
     .enter()
     .append('path')
     .attr('d', path)
-    .attr('stroke', 'lightgrey')
+    .attr('stroke', (d) => colorScale((d.Cities+d.Towns+d.Urban+d.Rural)/d3.max(averageData, d => (d.Cities+d.Towns+d.Urban+d.Rural))))
     .attr("stroke-opacity", 0.25)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
@@ -683,55 +734,205 @@ function createParallelCoordinates() {
 }
 
 function createTreeMap() {
-  currentData = getCountryAverageData(filteredData)
 
-  const width = 400;
-  const height = 400;
+  // set the dimensions and margins of the graph
+  const margin = {top: 10, right: 10, bottom: 10, left: 10},
+    width = 445 - margin.left - margin.right,
+    height = 445 - margin.top - margin.bottom;
 
-  // Create an SVG element to hold the tree map
-  const svg = d3
-    .select("#treeMap")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .append("g")
-    .attr("transform", `translate(${0},${0})`);
+  // append the svg object to the body of the page
+  const svg = d3.select("#treeMap")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",`translate(${margin.left}, ${margin.top})`);
 
+  // read json data
+  d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_dendrogram_full.json").then( function(data) {
+    // Give the data to this cluster layout:
+    const root = d3.hierarchy(data).sum(function(d){ return d.value}) // Here the size of each leave is given in the 'value' field in input data
 
+    // const root = currentData;
 
-  // // Create main background rectangles
-  // svg
-  //   .append("rect")
-  //   .attr("width", width)
-  //   .attr("height", height)
-  //   .attr("fill", "white")
-  //   .attr("fill-opacity", 0.25)
-  //   ;
+    // Then d3.treemap computes the position of each element of the hierarchy
+    d3.treemap()
+      .size([width, height])
+      .paddingTop(28)
+      .paddingRight(7)
+      .paddingInner(3)      // Padding between each rectangle
+      //.paddingOuter(6)
+      //.padding(20)
+      (root)
+
+    // prepare a color scale
+    const color = d3.scaleOrdinal()
+      .domain(["boss1", "boss2", "boss3"])
+      .range([ "#402D54", "#D18975", "#8FD175"])
+
+    // And a opacity scale
+    const opacity = d3.scaleLinear()
+      .domain([10, 30])
+      .range([.5,1])
+
+    // use this information to add rectangles:
+    svg
+      .selectAll("rect")
+      .data(root.leaves())
+      .join("rect")
+        .attr('x', function (d) { return d.x0; })
+        .attr('y', function (d) { return d.y0; })
+        .attr('width', function (d) { return d.x1 - d.x0; })
+        .attr('height', function (d) { return d.y1 - d.y0; })
+        .style("stroke", "black")
+        .style("fill", function(d){ return color(d.parent.data.name)} )
+        .style("opacity", function(d){ return opacity(d.data.value)})
+
+    // and to add the text labels
+    svg
+      .selectAll("text")
+      .data(root.leaves())
+      .enter()
+      .append("text")
+        .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
+        .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
+        .text(function(d){ return d.data.name.replace('mister_','') })
+        .attr("font-size", "19px")
+        .attr("fill", "beige")
+
+    // and to add the text labels
+    svg
+      .selectAll("vals")
+      .data(root.leaves())
+      .enter()
+      .append("text")
+        .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
+        .attr("y", function(d){ return d.y0+35})    // +20 to adjust position (lower)
+        .text(function(d){ return d.data.value })
+        .attr("font-size", "11px")
+        .attr("fill", "beige")
+
+    // Add title for the 3 groups
+    svg
+      .selectAll("titles")
+      .data(root.descendants().filter(function(d){return d.depth==1}))
+      .enter()
+      .append("text")
+        .attr("x", function(d){ return d.x0})
+        .attr("y", function(d){ return d.y0+21})
+        .text(function(d){ return d.data.name })
+        .attr("font-size", "19px")
+        .attr("fill",  function(d){ return color(d.data.name)} )
+
+    // Add title for the 3 groups
+    svg
+      .append("text")
+        .attr("x", 0)
+        .attr("y", 14)    // +20 to adjust position (lower)
+        .text("GDP and deths caused by air pollution per country")
+        .attr("font-size", "19px")
+        .attr("fill",  "beige" )
+
+  })
 }
 
 function createStreamGraph() {
-  currentData = getCountryAverageData(filteredData)
+// set the dimensions and margins of the graph
+const margin = {top: 20, right: 30, bottom: 0, left: 10},
+    width = 1200,
+    height = 450;
 
-  const width = 600;
-  const height = 400;
+// append the svg object to the body of the page
+const svg = d3.select("#streamGraph")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          `translate(${margin.left}, ${margin.top})`);
 
-  // Create an SVG element to hold the tree map
-  const svg = d3
-    .select("#streamGraph")
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height)
-    .append("g")
-    .attr("transform", `translate(${0},${0})`);
+// Parse the Data
+d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/5_OneCatSevNumOrdered_wide.csv").then(function(data) {
 
+  // List of groups = header of the csv files
+  const keys = data.columns.slice(1)
 
+  // Add X axis
+  const x = d3.scaleLinear()
+    .domain(d3.extent(data, function(d) { return d.year; }))
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", `translate(0, ${height*0.8})`)
+    .call(d3.axisBottom(x).tickSize(-height*.7).tickValues([1900, 1925, 1975, 2000]))
+    .select(".domain").remove()
+  // Customization
+  svg.selectAll(".tick line").attr("stroke", "#b8b8b8")
 
-  // // Create main background rectangles
-  // svg
-  //   .append("rect")
-  //   .attr("width", width)
-  //   .attr("height", height)
-  //   .attr("fill", "white")
-  //   .attr("fill-opacity", 0.25)
-  //   ;
+  // Add X axis label:
+  svg.append("text")
+      .attr("text-anchor", "end")
+      .attr("x", width)
+      .attr("y", height-30 )
+      .text("Time (year)");
+
+  // Add Y axis
+  const y = d3.scaleLinear()
+    .domain([-100000, 100000])
+    .range([ height, 0 ]);
+
+  // color palette
+  const color = d3.scaleOrdinal()
+    .domain(keys)
+    .range(d3.schemeDark2);
+
+  //stack the data?
+  const stackedData = d3.stack()
+    .offset(d3.stackOffsetSilhouette)
+    .keys(keys)
+    (data)
+
+  // create a tooltip
+  const Tooltip = svg
+    .append("text")
+    .attr("x", 0)
+    .attr("y", 0)
+    .style("opacity", 0)
+    .style("font-size", 17)
+
+  // Three function that change the tooltip when user hover / move / leave a cell
+  const mouseover = function(event,d) {
+    Tooltip.style("opacity", 1)
+    d3.selectAll(".myArea").style("opacity", .2)
+    d3.select(this)
+      .style("stroke", "black")
+      .style("opacity", 1)
+  }
+  const mousemove = function(event,d,i) {
+    grp = d.key
+    Tooltip.text(grp)
+  }
+  const mouseleave = function(event,d) {
+    Tooltip.style("opacity", 0)
+    d3.selectAll(".myArea").style("opacity", 1).style("stroke", "none")
+   }
+
+  // Area generator
+  const area = d3.area()
+    .x(function(d) { return x(d.data.year); })
+    .y0(function(d) { return y(d[0]); })
+    .y1(function(d) { return y(d[1]); })
+
+  // Show the areas
+  svg
+    .selectAll("mylayers")
+    .data(stackedData)
+    .join("path")
+      .attr("class", "myArea")
+      .style("fill", function(d) { return color(d.key); })
+      .attr("d", area)
+      .on("mouseover", mouseover)
+      .on("mousemove", mousemove)
+      .on("mouseleave", mouseleave)
+
+})
 }
