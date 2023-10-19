@@ -13,6 +13,7 @@ var parallelColorScale;
 
 
 var choroLegendCreated = false;
+var paralellLegendCreated = false;
 
 // Define margin and dimensions for the charts
 const margin = {
@@ -557,12 +558,15 @@ function createParallelCoordinates() {
   var filters = {};
 
   // Create a title for the choropleth map
-  const chartTitle = d3
-  .select("#parallelCoordinatesTitle")
-  .append("text")
-  .attr("x", width / 2)
-  .attr("y", margin.top)
-  .text("Region AQI Values per country");
+  if (!paralellLegendCreated) {
+    const chartTitle = d3
+    .select("#parallelCoordinatesTitle")
+    .append("text")
+    .attr("x", width / 2)
+    .attr("y", margin.top)
+    .text("Region AQI Values per country");
+    paralellLegendCreated = true;
+  }
 
   // Append the SVG object to the body of the page
   const svg = d3
