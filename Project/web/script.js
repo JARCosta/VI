@@ -8,6 +8,7 @@ var histogramData;
 
 var year_range = [2010, 2019];
 
+const AQIcolorScale = d3.interpolateRgbBasis(["lightgreen", "yellow", "red"]);
 
 var parallelColorScale;
 
@@ -349,7 +350,7 @@ function createChoroplethMap() {
         return d.properties.name == element.Country;
       })
       .attr("fill", function (d) {
-        return element.Total != ".." && element.Total > 0 ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "none";
+        return element.Total != ".." && element.Total > 0 ? AQIcolorScale(colorScale(element.Total)) : "none";
       });
     mapGroup
       .selectAll(".inactive")
@@ -357,7 +358,7 @@ function createChoroplethMap() {
         return d.properties.name == element.Country;
       })
       .attr("fill", function (d) {
-        return element.Total != ".." && element.Total > 0 ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "#fff0db";
+        return element.Total != ".." && element.Total > 0 ? AQIcolorScale(colorScale(element.Total)) : "#fff0db";
       });
     mapGroup
       .selectAll(".choro.data")
@@ -427,17 +428,17 @@ function createChoroplethMap() {
     gradient
       .append("stop")
       .attr("offset", "0%")
-      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(1));
+      .attr("stop-color", AQIcolorScale(1));
       
       gradient
       .append("stop")
       .attr("offset", "50%")
-      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(0.5));
+      .attr("stop-color", AQIcolorScale(0.5));
       
       gradient
       .append("stop")
       .attr("offset", "100%")
-      .attr("stop-color", d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(0));
+      .attr("stop-color", AQIcolorScale(0));
 
     // Create the legend rectangle filled with the color scale gradient
     const legend = svg2.append("g").attr("transform", `translate(0, 40)`);
@@ -745,8 +746,6 @@ function createParallelCoordinates() {
 
 
 
-  const colorScale = d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])
-  ;
 
   // Inactive data
   svg.append('g').attr('class', 'inactive').selectAll('path')
@@ -754,7 +753,7 @@ function createParallelCoordinates() {
     .enter()
     .append('path')
     .attr('d', path)
-    .attr('stroke', (d) => colorScale((d.Cities+d.Towns+d.Urban+d.Rural)/d3.max(averageData, d => (d.Cities+d.Towns+d.Urban+d.Rural))))
+    .attr('stroke', (d) => AQIcolorScale((d.Cities+d.Towns+d.Urban+d.Rural)/d3.max(averageData, d => (d.Cities+d.Towns+d.Urban+d.Rural))))
     .attr("stroke-opacity", 0.25)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
@@ -819,7 +818,7 @@ function createParallelCoordinates() {
     .attr("class", "parallel data")
     .attr("id", "selectable")
     .attr('d', path)
-    .attr('stroke', (d) => colorScale((d.Cities+d.Towns+d.Urban+d.Rural)/d3.max(averageData, d => (d.Cities+d.Towns+d.Urban+d.Rural))))
+    .attr('stroke', (d) => AQIcolorScale((d.Cities+d.Towns+d.Urban+d.Rural)/d3.max(averageData, d => (d.Cities+d.Towns+d.Urban+d.Rural))))
     .attr("stroke-opacity", 1)
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
