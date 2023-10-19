@@ -76,42 +76,81 @@ function getYearAverageData(data) {
     const towns = element.Towns;
     const urban = element.Urban;
     const rural = element.Rural;
+    const total = element.Total;
     const totalEmissions = element.Total_Emissions;
 
     const index = averageData.findIndex((d) => d.Year == year);
 
-    if(cities == "..") {
-      cities = 0;
-    }
+
     if (index == -1) {
       averageData.push({
         Year: year,
-        Cities: cities,
+        Cities: cities != ".." ? cities : 0,
+        Cities_count: cities != ".." ? 1 : 0,
         Towns: towns,
+        Towns_count: 1,
         Urban: urban,
+        Urban_count: 1,
         Rural: rural,
+        Rural_count: 1,
+        Total: total,
+        Total_count: 1,
         Total_Emissions: totalEmissions,
+        Total_Emissions_count: 1,
       });
     }
     else {
       if (cities != ".." && cities != NaN) {
-        averageData[index].Cities = (averageData[index].Cities + cities)/2;
+        averageData[index].Cities = (averageData[index].Cities + cities);
+        averageData[index].Cities_count++;
       }
       if (towns != "..") {
-        averageData[index].Towns = (averageData[index].Towns + towns)/2;
+        averageData[index].Towns = (averageData[index].Towns + towns);
+        averageData[index].Towns_count++;
       }
       if (urban != "..") {
-        averageData[index].Urban = (averageData[index].Urban + urban)/2;
+        averageData[index].Urban = (averageData[index].Urban + urban);
+        averageData[index].Urban_count++;
       }
       if (rural != "..") {
-        averageData[index].Rural = (averageData[index].Rural + rural)/2;
+        averageData[index].Rural = (averageData[index].Rural + rural);
+        averageData[index].Rural_count++;
       }
       if(totalEmissions != ".."){
-        averageData[index].Total_Emissions = (averageData[index].Total_Emissions + totalEmissions)/2;
+        averageData[index].Total_Emissions = (averageData[index].Total_Emissions + totalEmissions);
+        averageData[index].Total_Emissions_count++;
+      }
+      if(total != ".."){
+        averageData[index].Total = (averageData[index].Total + total);
+        averageData[index].Total_count++;
       }
     }
   });
-  return averageData;
+
+  averageData.forEach((element) => {
+    averageData[averageData.findIndex((d) => d.Year == element.Year)].Cities = element.Cities / element.Cities_count;
+    averageData[averageData.findIndex((d) => d.Year == element.Year)].Towns = element.Towns / element.Towns_count;
+    averageData[averageData.findIndex((d) => d.Year == element.Year)].Urban = element.Urban / element.Urban_count;
+    averageData[averageData.findIndex((d) => d.Year == element.Year)].Rural = element.Rural / element.Rural_count;
+    averageData[averageData.findIndex((d) => d.Year == element.Year)].Total = element.Total / element.Total_count;
+    averageData[averageData.findIndex((d) => d.Year == element.Year)].Total_Emissions = element.Total_Emissions / element.Total_Emissions_count;
+  });
+
+  const ret = [];
+  averageData.forEach((element) => {
+    ret.push({
+      Year: element.Year,
+      Cities: element.Cities,
+      Towns: element.Towns,
+      Urban: element.Urban,
+      Rural: element.Rural,
+      Total: element.Total,
+      Total_Emissions: element.Total_Emissions,
+    });
+  });
+  
+  // console.log(ret);
+  return ret;
 }
 
 
@@ -211,8 +250,7 @@ function createLineShart() {
 
 // Function to create the choropleth map
 function createChoroplethMap() {
-  currentData = filteredData;
-  // console.log(currentData);
+  currentData = getCountryAverageData(filteredData);
 
   if(!choroLegendCreated){ 
     // Create a title for the choropleth map
@@ -229,13 +267,13 @@ function createChoroplethMap() {
     .select("#choropleth")
     .append("svg")
     .attr("width", width*1.6 + margin.left + margin.right)
-    .attr("height", height + margin.bottom)
+    .attr("height", height+26 + margin.bottom)
     .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     ;
 
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
-    .attr("transform", `translate(${margin.left*0.1},-${margin.top*1})`)
+    .attr("transform", `translate(${margin.left*0},-${margin.top*0})`)
     .attr("style", `scale: 1.5`)
   ;
 
@@ -258,6 +296,17 @@ function createChoroplethMap() {
 
   // Add countries as path elements to the map
   
+  const tooltipContainer = d3
+    .select("#choropleth")
+    .append("div")
+    .attr("class", "tooltip")
+    .style("background-color", "white")
+    .style("opacity", 0)
+    .style("position", "absolute")
+    .style("border", "solid")
+    .style("border-width", "2px")
+    ;
+
   mapGroup
     .selectAll(".country")
     .data(globalDataCountries.features)
@@ -269,10 +318,26 @@ function createChoroplethMap() {
     .attr("stroke-opacity", 1)
     .attr("stroke-width", 0.25)
     .attr("fill-opacity", 0.5)
+    .attr("fill", "#fff0db")
     .on("click", handleMouseClick)
-    .append("title")
-    .text((d) => d.properties.name);
-
+    .on("mouseover", (event, d) => {
+      // console.log(d);
+      tooltipContainer.transition().duration(200).style("opacity", 0.9);
+      tooltipContainer//.html(d.properties.name + "\n aaa")
+        .style("left", (event.pageX + 28) + "px")
+        .style("top", (event.pageY) + "px")
+        .append("table")
+        .append("td")
+        .text(d.properties.name)
+        .append("td")
+        .text(d)
+        ;
+    })
+    .on("mouseout", () => {
+      tooltipContainer.transition().duration(500).style("opacity", 0);
+      tooltipContainer.selectAll("table").remove();
+    })
+    ;
   mapGroup
     .selectAll(".country")
     .data(globalDataCountries.features)
@@ -284,27 +349,31 @@ function createChoroplethMap() {
     .attr("stroke", "steelblue")
     .attr("stroke-opacity", 1)
     .attr("stroke-width", 0.25)
+    .attr("fill", "none")
     .attr("fill-opacity", 1)
     .attr("active", true)
     .on("click", handleMouseClick)
-    .append("title")
-    .text((d) => d.properties.name);
-  
-
+    .on("mouseover", (event, d) => {
+      // console.log(d);
+      tooltipContainer.transition().duration(200).style("opacity", 0.9);
+      tooltipContainer//.html(d.properties.name + "\n aaa")
+        .style("left", (event.pageX + 28) + "px")
+        .style("top", (event.pageY) + "px")
+        .append("table")
+        .append("td")
+        .text(d.properties.name)
+        .append("td")
+        .text(d)
+        ;
+    })
+    .on("mouseout", () => {
+      tooltipContainer.transition().duration(500).style("opacity", 0);
+      tooltipContainer.selectAll("table").remove();
+    })
+    ;
 
 
   // Set the fill color of each country based on its Total value
-
-  
-  
-  mapGroup
-    .selectAll(".inactive")
-    .attr("fill", "#fff0db");
-  mapGroup
-    .selectAll(".active")
-    .attr("fill", "none");
-  
-  
   currentData.forEach((element) => {
     mapGroup
       .selectAll(".active")
@@ -312,7 +381,7 @@ function createChoroplethMap() {
         return d.properties.name == element.Country;
       })
       .attr("fill", function (d) {
-        return element.Total != ".." ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "none";
+        return element.Total != ".." && element.Total > 0 ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "none";
       });
     mapGroup
       .selectAll(".inactive")
@@ -320,7 +389,7 @@ function createChoroplethMap() {
         return d.properties.name == element.Country;
       })
       .attr("fill", function (d) {
-        return element.Total != ".." ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "#fff0db";
+        return element.Total != ".." && element.Total > 0 ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "#fff0db";
       });
       // console.log(element.Total);
   });
@@ -347,9 +416,11 @@ function createChoroplethMap() {
     // Create a legend for the choropleth map
     const svg2 = d3
       .select("#choroplethLabel")
+      .style("position", "relative")
       .append("svg")
-      .attr("width", width * 0.2)
-      .attr("height", height);
+      .attr("width", width * 0.15)
+      .attr("height", height)
+      ;
 
     // Create a gradient for the legend color scale
     const defs = svg2.append("defs");
@@ -405,39 +476,69 @@ function getCountryAverageData(data) {
 
   const temp = data.filter(d => d.Year >= year_range[0] && d.Year <= year_range[1]);
 
+  countries = [];
   temp.forEach((element) => {
-    const country = element.Country;
-    const cities = element.Cities;
-    const towns = element.Towns;
-    const urban = element.Urban;
-    const rural = element.Rural;
-    const totalEmissions = element.Total_Emissions;
-
-    const index = averageData.findIndex((d) => d.Country == country);
-
-    if (index == -1) {
-
-      averageData.push({
-        Country: country,
-        Cities: cities,
-        Towns: towns,
-        Urban: urban,
-        Rural: rural,
-        Total_Emissions: totalEmissions,
-      });
-    }
-    else {
-      averageData[index].Cities = (averageData[index].Cities + cities)/2;
-      averageData[index].Towns = (averageData[index].Towns + towns)/2;
-      averageData[index].Urban = (averageData[index].Urban + urban)/2;
-      averageData[index].Rural = (averageData[index].Rural + rural)/2;
-      if(totalEmissions != ".."){
-        averageData[index].Total_Emissions = (averageData[index].Total_Emissions + totalEmissions)/2;
-      }
+    if(!countries.includes(element.Country)){
+      countries[element.Country] = [];
+      countries[element.Country]["Cities"] = 0;
+      countries[element.Country]["Cities_count"] = 0;
+      countries[element.Country]["Towns"] = 0;
+      countries[element.Country]["Towns_count"] = 0;
+      countries[element.Country]["Urban"] = 0;
+      countries[element.Country]["Urban_count"] = 0;
+      countries[element.Country]["Rural"] = 0;
+      countries[element.Country]["Rural_count"] = 0;
+      countries[element.Country]["Total"] = 0;
+      countries[element.Country]["Total_count"] = 0;
+      countries[element.Country]["Total_Emissions"] = 0;
+      countries[element.Country]["Total_Emissions_count"] = 0;
     }
   });
-  // console.log(averageData);
-  return averageData;
+
+  temp.forEach((element) => {
+    if(element.Cities != ".."){
+      countries[element.Country]["Cities"] += element.Cities;
+      countries[element.Country]["Cities_count"]++;
+    }
+    if(element.Towns != ".."){
+      countries[element.Country]["Towns"] += element.Towns;
+      countries[element.Country]["Towns_count"]++;
+    }
+    if(element.Urban != ".."){
+      countries[element.Country]["Urban"] += element.Urban;
+      countries[element.Country]["Urban_count"]++;
+    }
+    if(element.Rural != ".."){
+      countries[element.Country]["Rural"] += element.Rural;
+      countries[element.Country]["Rural_count"]++;
+    }
+    if(element.Total != ".."){
+      countries[element.Country]["Total"] += element.Total;
+      countries[element.Country]["Total_count"]++;
+    }
+    if(element.Total_Emissions != ".."){
+      countries[element.Country]["Total_Emissions"] += element.Total_Emissions;
+      countries[element.Country]["Total_Emissions_count"]++;
+    }
+  });
+
+  // console.log(["countries",countries]);
+  
+  var ret = [];
+  for (const country in countries) {
+    var temp1 = [];
+    temp1["Country"] = country;
+    temp1["Cities"] = countries[country]["Cities"]/countries[country]["Cities_count"];
+    temp1["Towns"] = countries[country]["Towns"]/countries[country]["Towns_count"];
+    temp1["Urban"] = countries[country]["Urban"]/countries[country]["Urban_count"];
+    temp1["Rural"] = countries[country]["Rural"]/countries[country]["Rural_count"];
+    temp1["Total"] = countries[country]["Total"]/countries[country]["Total_count"];
+    temp1["Total_Emissions"] = countries[country]["Total_Emissions"]/countries[country]["Total_Emissions_count"];
+    ret.push(temp1);
+  }
+  
+  // console.log(["ret",ret]);
+  return ret;
 }
 
 function createParallelCoordinates() {
@@ -454,6 +555,14 @@ function createParallelCoordinates() {
   const height = 400*2.35 - margin.top - margin.bottom;
   const padding = 28, brush_width = 20;
   var filters = {};
+
+  // Create a title for the choropleth map
+  const chartTitle = d3
+  .select("#parallelCoordinatesTitle")
+  .append("text")
+  .attr("x", width / 2)
+  .attr("y", margin.top)
+  .text("Region AQI Values per country");
 
   // Append the SVG object to the body of the page
   const svg = d3
@@ -564,8 +673,18 @@ function createParallelCoordinates() {
 
     // console.log(averageData.filter( d => d.selected == true));
 
+
+    
     var counter = 1;
     for (const dim of dimensions) {
+
+      var temp_scales = [];
+
+      temp_scales[dim] = d3
+        .scaleLinear()
+        .domain([0, d3.max(histogram2(averageData.filter( d => d.selected == true), dim), d => d.length)])
+        .range([0, 100]);
+
       yAxis[dim]
         .append("g").attr('class', 'bars')
         .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${width/2.5 * counter}px);`)
@@ -579,7 +698,7 @@ function createParallelCoordinates() {
         .attr("y", 0)
         
         .attr("width", xVerticalScale.bandwidth())
-        .attr("height", (d) => yHistogramScales[dim](d.length))
+        .attr("height", (d) => temp_scales[dim](d.length))
         
         .attr("fill", "lightgrey")
         .attr("fill-opacity", 0.2)

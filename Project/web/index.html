@@ -6,16 +6,13 @@
             body {
                 font-family: Arial;
             }
-            .container {
-                display: flex;
-            }
             .overlay {
                 display: flex;
             }
 
             .dashboard {
                 display: grid;
-                grid-template-columns: 1.75fr 1fr 1fr;
+                grid-template-columns: 1.3fr 1fr 1fr;
                 grid-template-rows: 0fr 1fr;
                 /* grid-template-columns: 1fr 1fr; */
 
@@ -34,10 +31,11 @@
                 height: 40px;
                 /* width: fit-content; */
             }
-            #choropleth {
+            .container1 {
+                display: flex;
                 grid-area: choro;
             }
-            #parallelCoordinates {
+            .container2 {
                 grid-area: parallel;
             }
             #streamGraph {
@@ -53,6 +51,9 @@
             #choroplethTitle {
                 text-align: center;
             }
+            #parallelCoordinatesTitle {
+                text-align: center;
+            }
         </style>
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
@@ -62,7 +63,7 @@
     <body onload="startDashboard()" style="background-color: #54738C;">
         <div class="dashboard">
             <div class="visualization" id="lineChart" style="background-color: #fff1;"></div>
-            <div class="container" style="background-color: #fff1; width: fit-content;">
+            <div class="container1" style="background-color: #fff1; width: -webkit-fill-available;">
                 <div >
                     <div id="choroplethTitle"></div>
                     <div class="visualization" id="choropleth"></div>
@@ -70,8 +71,14 @@
                 <div class="visualization" id="choroplethLabel"></div>
             </div>
 
-            <div class="visualization" id="parallelCoordinates" style="background-color: #fff1;"></div>
-            <!-- <div class="visualization" id="ternaryPlot" style="background-color: #fff1;"></div> -->
+            <div class="container2" style="background-color: #fff1; width: fit-content;">
+                <div >
+                    <div id="parallelCoordinatesTitle"></div>
+                    <div class="visualization" id="parallelCoordinates"></div>
+                </div>
+            </div>
+
+            <!-- <div class="visualization" id="parallelCoordinates" style="background-color: #fff1;"></div> -->
             <div class="visualization" id="streamGraph" style="background-color: #fff1;"></div>
             <div class="visualization" id="treeMap" style="background-color: #fff1;"></div>
         </div>
