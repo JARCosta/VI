@@ -189,7 +189,7 @@ function createLineShart() {
     .datum(currentData)
     .attr("class", "line")
     .attr("d", line)
-    .attr("stroke", "black")
+    .attr("stroke", "beige")
     .attr("stroke-width", 2)
     .attr("fill", "none")
     ;
@@ -205,7 +205,7 @@ function createLineShart() {
     .attr("y", 20)
     .attr("text-anchor", "middle")
     .text((d) => d.Year)
-    .attr("fill", "black")
+    .attr("fill", "beige")
     .attr("font-size", "10px")
     .attr("font-weight", "bold")
     .attr("transform", "translate(0, 10)")
@@ -260,6 +260,7 @@ function createChoroplethMap() {
     .append("text")
     .attr("x", width / 2)
     .attr("y", margin.top)
+    .style("color", "beige")
     .text("Average AQI Values per country");
   }
     
@@ -301,7 +302,7 @@ function createChoroplethMap() {
     .select("#choropleth")
     .append("div")
     .attr("class", "tooltip")
-    .style("background-color", "white")
+    .style("background-color", "beige")
     .style("opacity", 0)
     .style("position", "absolute")
     .style("border", "solid")
@@ -321,23 +322,6 @@ function createChoroplethMap() {
     .attr("fill-opacity", 0.5)
     .attr("fill", "#fff0db")
     .on("click", handleMouseClick)
-    .on("mouseover", (event, d) => {
-      // console.log(d);
-      tooltipContainer.transition().duration(200).style("opacity", 0.9);
-      tooltipContainer//.html(d.properties.name + "\n aaa")
-        .style("left", (event.pageX + 28) + "px")
-        .style("top", (event.pageY) + "px")
-        .append("table")
-        .append("td")
-        .text(d.properties.name)
-        .append("td")
-        .text(d)
-        ;
-    })
-    .on("mouseout", () => {
-      tooltipContainer.transition().duration(500).style("opacity", 0);
-      tooltipContainer.selectAll("table").remove();
-    })
     ;
   mapGroup
     .selectAll(".country")
@@ -354,23 +338,6 @@ function createChoroplethMap() {
     .attr("fill-opacity", 1)
     .attr("active", true)
     .on("click", handleMouseClick)
-    .on("mouseover", (event, d) => {
-      // console.log(d);
-      tooltipContainer.transition().duration(200).style("opacity", 0.9);
-      tooltipContainer//.html(d.properties.name + "\n aaa")
-        .style("left", (event.pageX + 28) + "px")
-        .style("top", (event.pageY) + "px")
-        .append("table")
-        .append("td")
-        .text(d.properties.name)
-        .append("td")
-        .text(d)
-        ;
-    })
-    .on("mouseout", () => {
-      tooltipContainer.transition().duration(500).style("opacity", 0);
-      tooltipContainer.selectAll("table").remove();
-    })
     ;
 
 
@@ -392,6 +359,30 @@ function createChoroplethMap() {
       .attr("fill", function (d) {
         return element.Total != ".." && element.Total > 0 ? d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])(colorScale(element.Total)) : "#fff0db";
       });
+    mapGroup
+      .selectAll(".choro.data")
+      .filter(function (d) {
+        return d.properties.name == element.Country;
+      })
+      .on("mouseover", (event, d) => {
+        // console.log(d);
+        tooltipContainer.transition().duration(200).style("opacity", 0.9);
+        const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
+          .style("left", (event.pageX + 28) + "px")
+          .style("top", (event.pageY) + "px")
+          .append("table");
+        tr.append("tr")
+          .text(element.Country);
+        if (element.Total > 0) {
+          tr.append("tr")
+            .text("AQI index: " + element.Total.toFixed(2));
+        }
+      })
+      .on("mouseout", () => {
+        tooltipContainer.transition().duration(500).style("opacity", 0);
+        tooltipContainer.selectAll("table").remove();
+      })
+      ;
       // console.log(element.Total);
   });
 
@@ -465,6 +456,7 @@ function createChoroplethMap() {
         .append("text")
         .attr("x", legendWidth + 5)
         .attr("y", legendHeight * (1-index) * 0.955 + 12)
+        .style("fill", "beige")
         .text(Math.round(colorScale.invert(index)));
     }
   }
@@ -564,6 +556,7 @@ function createParallelCoordinates() {
     .append("text")
     .attr("x", width / 2)
     .attr("y", margin.top)
+    .style("color", "beige")
     .text("Region AQI Values per country");
     paralellLegendCreated = true;
   }
@@ -704,9 +697,9 @@ function createParallelCoordinates() {
         .attr("width", xVerticalScale.bandwidth())
         .attr("height", (d) => temp_scales[dim](d.length))
         
-        .attr("fill", "lightgrey")
+        .attr("fill", "beige")
         .attr("fill-opacity", 0.2)
-        .attr("stroke", "black")
+        .attr("stroke", "beige")
         .attr("stroke-width", 1.5)
         .text((d) => d.title);
       counter++;
@@ -755,7 +748,6 @@ function createParallelCoordinates() {
   const colorScale = d3.interpolateRgbBasis(["lightgreen", "yellow", "red"])
   ;
 
-
   // Inactive data
   svg.append('g').attr('class', 'inactive').selectAll('path')
     .data(averageData)
@@ -771,6 +763,54 @@ function createParallelCoordinates() {
     .text((d) => d.Country)
     ;
   
+  yAxis = [];
+  for (const dim of dimensions) {
+    yAxis[dim] = svg
+      .append("g")
+      .attr("class", "yAxis")
+      .style("fill", "beige")
+      ;
+  }
+
+  var counter = 1;
+  for (const dim of dimensions) {
+    yAxis[dim]
+      .append("g").attr('class', 'bars')
+      .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${width/2.5 * counter}px);`)
+      .selectAll(".rect")
+      .data(bins[dim])
+      .enter()
+      .append("rect")
+      .attr("class", "bar data")
+      
+      .attr("x", (d) => xVerticalAxis2(d.x0))
+      .attr("y", 0)
+      // .attr("country list", (d) => d.)
+      .attr("length", (d) => d.length)
+      
+      .attr("width", xVerticalScale.bandwidth())
+      .attr("height", (d) => yHistogramScales[dim](d.length))
+      
+      .attr("fill", "beige")
+      .attr("fill-opacity", 0.2)
+      .attr("stroke", "beige")
+      .attr("stroke-width", 1.5)
+      .text((d) => d.title);
+    counter++;
+  }
+
+  // add tooltip
+  const tooltipContainer = d3
+    .select("#parallelCoordinates")
+    .append("div")
+    .attr("class", "tooltip")
+    .style("background-color", "beige")
+    .style("opacity", 0)
+    .style("position", "absolute")
+    .style("border", "solid")
+    .style("border-width", "2px")
+    ;
+
   // Active data
   svg.append('g').attr('class', 'active').selectAll('path')
     .data(averageData)
@@ -784,10 +824,30 @@ function createParallelCoordinates() {
     .attr("stroke-width", 1.5)
     .attr("fill", "none")
     .style("transform", "scale(2,1)")
-    .append("title")
-    .text((d) => d.Country)
+    .on("mouseover", (event, d) => {
+      // console.log(d);
+      tooltipContainer.transition().duration(200).style("opacity", 0.9);
+      const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
+        .style("left", (event.pageX + 28) + "px")
+        .style("top", (event.pageY) + "px")
+        .append("table");
+      tr.append("tr")
+        .text(d.Country);
+      tr.append("tr")
+        .text("Cities: " + d.Cities.toFixed(2));
+        tr.append("tr")
+          .text("Urban: " + d.Urban.toFixed(2));
+      tr.append("tr")
+        .text("Towns: " + d.Towns.toFixed(2));
+      tr.append("tr")
+        .text("Rural: " + d.Rural.toFixed(2));
+    })
+    .on("mouseout", () => {
+      tooltipContainer.transition().duration(500).style("opacity", 0);
+      tooltipContainer.selectAll("table").remove();
+    })
     ;
-  
+
   // Vertical axis for the features
   const featureAxisG = svg.selectAll('g.feature')
     .data(dimensions)
@@ -795,6 +855,9 @@ function createParallelCoordinates() {
     .append('g')
     .attr('class', 'feature')
     .attr('transform', d => ('translate(' + xScale(d)*2 + ',0)'))
+    .style("fill", "beige")
+    .style("color", "beige")
+    .style("stroke-width", 1.5)
     ;
 
   featureAxisG
@@ -819,40 +882,7 @@ function createParallelCoordinates() {
   .attr("transform", "translate(0,-25)")
   .text(d=>d);
 
-  yAxis = [];
-  for (const dim of dimensions) {
-    yAxis[dim] = svg
-      .append("g")
-      .attr("class", "yAxis")
-      ;
-  }
 
-  var counter = 1;
-  for (const dim of dimensions) {
-    yAxis[dim]
-      .append("g").attr('class', 'bars')
-      .attr("style", `transform: rotate(-90deg) translate(-${height}px, ${width/2.5 * counter}px);`)
-      .selectAll(".rect")
-      .data(bins[dim])
-      .enter()
-      .append("rect")
-      .attr("class", "bar data")
-      
-      .attr("x", (d) => xVerticalAxis2(d.x0))
-      .attr("y", 0)
-      // .attr("country list", (d) => d.)
-      .attr("length", (d) => d.length)
-      
-      .attr("width", xVerticalScale.bandwidth())
-      .attr("height", (d) => yHistogramScales[dim](d.length))
-      
-      .attr("fill", "lightgrey")
-      .attr("fill-opacity", 0.2)
-      .attr("stroke", "black")
-      .attr("stroke-width", 1.5)
-      .text((d) => d.title);
-    counter++;
-  }
 
 }
 
