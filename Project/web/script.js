@@ -271,7 +271,7 @@ function createChoroplethMap() {
     .append("svg")
     .attr("width", width*1.6 + margin.left + margin.right)
     .attr("height", height+26 + margin.bottom)
-    .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
+    // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     ;
 
   // Create a group to hold the map elements
@@ -376,7 +376,7 @@ function createChoroplethMap() {
           .text(element.Country);
         if (element.Total > 0) {
           tr.append("tr")
-            .text("AQI index: " + element.Total.toFixed(2));
+            .text("AQI index: " + element.Total.toFixed(1));
         }
       })
       .on("mouseout", () => {
@@ -486,6 +486,10 @@ function getCountryAverageData(data) {
       countries[element.Country]["Total_count"] = 0;
       countries[element.Country]["Total_Emissions"] = 0;
       countries[element.Country]["Total_Emissions_count"] = 0;
+      countries[element.Country]["Age-standardized"] = 0;
+      countries[element.Country]["Age-standardized_count"] = 0;
+      countries[element.Country]["GDP"] = 0;
+      countries[element.Country]["GDP_count"] = 0;
     }
   });
 
@@ -514,6 +518,15 @@ function getCountryAverageData(data) {
       countries[element.Country]["Total_Emissions"] += element.Total_Emissions;
       countries[element.Country]["Total_Emissions_count"]++;
     }
+    if(element["Age-standardized"] != ".."){
+      countries[element.Country]["Age-standardized"] += element["Age-standardized"];
+      countries[element.Country]["Age-standardized_count"]++;
+    }
+    if(element.GDP != ".."){
+      countries[element.Country]["GDP"] += element.GDP;
+      countries[element.Country]["GDP_count"]++;
+    }
+    countries[element.Country]["Continent"] = element.Continent;
   });
 
   // console.log(["countries",countries]);
@@ -522,12 +535,15 @@ function getCountryAverageData(data) {
   for (const country in countries) {
     var temp1 = [];
     temp1["Country"] = country;
+    temp1["Continent"] = countries[country]["Continent"];
     temp1["Cities"] = countries[country]["Cities"]/countries[country]["Cities_count"];
     temp1["Towns"] = countries[country]["Towns"]/countries[country]["Towns_count"];
     temp1["Urban"] = countries[country]["Urban"]/countries[country]["Urban_count"];
     temp1["Rural"] = countries[country]["Rural"]/countries[country]["Rural_count"];
     temp1["Total"] = countries[country]["Total"]/countries[country]["Total_count"];
     temp1["Total_Emissions"] = countries[country]["Total_Emissions"]/countries[country]["Total_Emissions_count"];
+    temp1["Age-standardized"] = countries[country]["Age-standardized"]/countries[country]["Age-standardized_count"];
+    temp1["GDP"] = countries[country]["GDP"]/countries[country]["GDP_count"];
     ret.push(temp1);
   }
   
@@ -659,6 +675,11 @@ function createParallelCoordinates() {
       .style('stroke-opacity', d => (selected(d) && ( country_selection[d.Country] == true || count_trues() == 0 ) ? 1 : 0))
       ;
 
+    d3.selectAll('.treeMap.data')
+      .style('fill-opacity', d => (selected(d) && ( country_selection[d.data.Country] == true || count_trues() == 0 ) ? 1 : 0.5))
+      // .style('stroke-width', d => (selected(d) && ( country_selection[d.data.Country] == true || count_trues() == 0 ) ? 2 : 0))
+      ;
+
     averageData.forEach((element) => {
       if(selected(element) && ( country_selection[element.Country] == true || count_trues() == 0 )){
         element.selected = true;
@@ -711,15 +732,20 @@ function createParallelCoordinates() {
 
     if(d.properties != undefined){
       var country = d.properties.name;
-      // console.log(country);
       var data = averageData.filter(d => d.Country == country);
       
       d = data[0];
       if(d == undefined) return false;
+    } else {
+      if(d.Country == undefined){
+        d = d.data;
+        // console.log(d);
+      }
     }
 
     const _filters = Object.entries(filters);
     return _filters.every(f => {
+      // console.log([d,f[1][1] <= d[f[0]] && d[f[0]] <= f[1][0]]);
       return f[1][1] <= d[f[0]] && d[f[0]] <= f[1][0];
     });
   }
@@ -833,13 +859,13 @@ function createParallelCoordinates() {
       tr.append("tr")
         .text(d.Country);
       tr.append("tr")
-        .text("Cities: " + d.Cities.toFixed(2));
+        .text("Cities: " + d.Cities.toFixed(1));
         tr.append("tr")
-          .text("Urban: " + d.Urban.toFixed(2));
+          .text("Urban: " + d.Urban.toFixed(1));
       tr.append("tr")
-        .text("Towns: " + d.Towns.toFixed(2));
+        .text("Towns: " + d.Towns.toFixed(1));
       tr.append("tr")
-        .text("Rural: " + d.Rural.toFixed(2));
+        .text("Rural: " + d.Rural.toFixed(1));
     })
     .on("mouseout", () => {
       tooltipContainer.transition().duration(500).style("opacity", 0);
@@ -886,11 +912,13 @@ function createParallelCoordinates() {
 }
 
 function createTreeMap() {
+  const currentData = getCountryAverageData(filteredData.filter(d => d["Age-standardized"] != ".."));
+  console.log(currentData);
 
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 10, bottom: 10, left: 10},
-    width = 445 - margin.left - margin.right,
-    height = 445 - margin.top - margin.bottom;
+    width = 445+100 - margin.left - margin.right,
+    height = 445+75 - margin.top - margin.bottom;
 
   // append the svg object to the body of the page
   const svg = d3.select("#treeMap")
@@ -900,92 +928,154 @@ function createTreeMap() {
   .append("g")
     .attr("transform",`translate(${margin.left}, ${margin.top})`);
 
+  // console.log(currentData.filter(d => {d["Age-standardized"] != ".."; console.log(d.Continent)}));
+
+  const temp = [];
+  temp["children"] = [];
+  const  continents = ["North America", "South America", "Europe", "Asia", "Africa", "Oceania"];
+  for (const i in continents) {
+    temp["children"][temp["children"].length] = [];
+    temp["children"][temp["children"].length-1]["children"] = currentData.filter(d => d["Age-standardized"] != ".." && d.Continent == continents[i]);
+    temp["children"][temp["children"].length-1]["name"] = continents[i];
+  }
+  // temp["children"] = currentData.filter(d =>  {d["Age-standardized"] != ".."; console.log(d.Continent)});
+
+  // Give the data to this cluster layout:
+  const root = d3.hierarchy(temp).sum(function(d){ return d.GDP**0.75}) // Here the size of each leave is given in the 'value' field in input data
+  console.log(["real", currentData, temp, root]);
+  
+
   // read json data
-  d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_dendrogram_full.json").then( function(data) {
-    // Give the data to this cluster layout:
-    const root = d3.hierarchy(data).sum(function(d){ return d.value}) // Here the size of each leave is given in the 'value' field in input data
+  // d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_dendrogram_full.json").then( function(data) {
+  //   // Give the data to this cluster layout:
+  //   const root = d3.hierarchy(data).sum(function(d){ return d.value}) // Here the size of each leave is given in the 'value' field in input data
+  //   console.log(["test", data, root]);
+  // });
 
-    // const root = currentData;
+  // Then d3.treemap computes the position of each element of the hierarchy
+  d3.treemap()
+    .tile(d3.treemapBinary)
+    .size([width, height])
+    .paddingTop(28)
+    .paddingRight(7)
+    .paddingInner(1)      // Padding between each rectangle
+    //.paddingOuter(6)
+    //.padding(20)
+    (root)
 
-    // Then d3.treemap computes the position of each element of the hierarchy
-    d3.treemap()
-      .size([width, height])
-      .paddingTop(28)
-      .paddingRight(7)
-      .paddingInner(3)      // Padding between each rectangle
-      //.paddingOuter(6)
-      //.padding(20)
-      (root)
+  // prepare a color scale
+  const color = d3.scaleOrdinal()
+    // .domain(["boss1", "boss2", "boss3"])
+    .range(["cyan", "red", "orange", "black", "yellow", "lightgreen"])
+  
+  // And a opacity scale
+  const opacity = d3.scaleLinear()
+    .domain([d3.min(currentData, (d) => d["Age-standardized"])**0.5, d3.max(currentData, (d) => d["Age-standardized"])**0.5])
+    .range([0,1])
 
-    // prepare a color scale
-    const color = d3.scaleOrdinal()
-      .domain(["boss1", "boss2", "boss3"])
-      .range([ "#402D54", "#D18975", "#8FD175"])
 
-    // And a opacity scale
-    const opacity = d3.scaleLinear()
-      .domain([10, 30])
-      .range([.5,1])
 
-    // use this information to add rectangles:
-    svg
-      .selectAll("rect")
-      .data(root.leaves())
-      .join("rect")
-        .attr('x', function (d) { return d.x0; })
-        .attr('y', function (d) { return d.y0; })
-        .attr('width', function (d) { return d.x1 - d.x0; })
-        .attr('height', function (d) { return d.y1 - d.y0; })
-        .style("stroke", "black")
-        .style("fill", function(d){ return color(d.parent.data.name)} )
-        .style("opacity", function(d){ return opacity(d.data.value)})
+  // add tooltip
+  const tooltipContainer = d3
+    .select("#parallelCoordinates")
+    .append("div")
+    .attr("class", "tooltip")
+    .style("background-color", "beige")
+    .style("opacity", 0)
+    .style("position", "absolute")
+    .style("border", "solid")
+    .style("border-width", "2px")
+    ;
 
-    // and to add the text labels
-    svg
-      .selectAll("text")
-      .data(root.leaves())
-      .enter()
-      .append("text")
-        .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
-        .attr("y", function(d){ return d.y0+20})    // +20 to adjust position (lower)
-        .text(function(d){ return d.data.name.replace('mister_','') })
-        .attr("font-size", "19px")
-        .attr("fill", "beige")
 
-    // and to add the text labels
-    svg
-      .selectAll("vals")
-      .data(root.leaves())
-      .enter()
-      .append("text")
-        .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
-        .attr("y", function(d){ return d.y0+35})    // +20 to adjust position (lower)
-        .text(function(d){ return d.data.value })
-        .attr("font-size", "11px")
-        .attr("fill", "beige")
 
-    // Add title for the 3 groups
-    svg
-      .selectAll("titles")
-      .data(root.descendants().filter(function(d){return d.depth==1}))
-      .enter()
-      .append("text")
-        .attr("x", function(d){ return d.x0})
-        .attr("y", function(d){ return d.y0+21})
-        .text(function(d){ return d.data.name })
-        .attr("font-size", "19px")
-        .attr("fill",  function(d){ return color(d.data.name)} )
+  // use this information to add rectangles:
+  svg
+    .selectAll("rect")
+    .data(root.leaves())
+    .join("rect")
+      .attr("class", "treeMap data")
+      .attr('x', function (d) { return d.x0; })
+      .attr('y', function (d) { return d.y0; })
+      .attr('width', function (d) { return d.x1 - d.x0; })
+      .attr('height', function (d) { return d.y1 - d.y0; })
+      .attr("aaa", function(d){ return d.data["Age-standardized"] })
+      .style("stroke", "beige")
+      .style("stroke-width", 0)
 
-    // Add title for the 3 groups
-    svg
-      .append("text")
-        .attr("x", 0)
-        .attr("y", 14)    // +20 to adjust position (lower)
-        .text("GDP and deths caused by air pollution per country")
-        .attr("font-size", "19px")
-        .attr("fill",  "beige" )
+      // .style("fill", function(d){ return color(d.data.Continent)} )
+      // .style("opacity", function(d){ return opacity(d.data.GDP**0.2)})
+      
+      .style("fill", function(d){ return (d3.interpolateRgbBasis(["white", "red"])(opacity(d.data["Age-standardized"]**0.5) )) } )
 
-  })
+      // .text(function(d){ return (d.data.Country + " " + d.data.Continent) })
+      .on("mouseover", (event, d) => {
+        // console.log(d);
+        tooltipContainer.transition().duration(200).style("opacity", 0.9);
+        const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
+          .style("left", (event.pageX + 28) + "px")
+          .style("top", (event.pageY) + "px")
+          .append("table");
+        tr.append("tr")
+          .text(d.data.Country);
+        tr.append("tr")
+          .text("GDP: " + (d.data.GDP / 1000000000000 > 1 ?  d3.format(".1f")(d.data.GDP / 1000000000000) + "B" : d3.format(".1f")(d.data.GDP / 1000000) + "M"));
+        tr.append("tr")
+          .text("Deaths: " + d.data["Age-standardized"].toFixed(1));
+      })
+      .on("mouseout", () => {
+        tooltipContainer.transition().duration(500).style("opacity", 0);
+        tooltipContainer.selectAll("table").remove();
+      })
+      .on("click", handleMouseClick)
+      ;
+
+  // and to add the text labels
+  svg
+    .selectAll("text")
+    .data(root.leaves())
+    .enter()
+    .append("text")
+      .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
+      .attr("y", function(d){ return d.y0+9})    // +20 to adjust position (lower)
+      // .text(function(d){ return d.data.Country })
+      // .attr("aaa", function(d){ return d.data["Age-standardized"] })
+      .attr("font-size", d => 11/*(((d.x1-d.x0) /12) * ((d.y1-d.y0) /12))*/)
+      .attr("fill", "beige")
+
+  // and to add the text labels
+  svg
+    .selectAll("vals")
+    .data(root.leaves())
+    .enter()
+    .append("text")
+      .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
+      .attr("y", function(d){ return d.y0+35})    // +20 to adjust position (lower)
+      // .text(function(d){ return d.data["Age-standardized"] })
+      .attr("font-size", "11px")
+      .attr("fill", "beige")
+
+  // Add title for the 3 groups
+  svg
+    .selectAll("titles")
+    .data(root.descendants().filter(function(d){return d.depth==1}))
+    .enter()
+    .append("text")
+      .attr("x", function(d){ return d.x0})
+      .attr("y", function(d){ return d.y0+21})
+      .text(function(d){ return d.data.name })
+      .attr("font-size", "19px")
+      .attr("fill",  function(d){ return color(d.data.name)} )
+
+  // Add title for the 3 groups
+  svg
+    .append("text")
+      .attr("x", 0)
+      .attr("y", 14)    // +20 to adjust position (lower)
+      .text("GDP and deaths caused by air pollution per country")
+      .attr("font-size", "19px")
+      .attr("fill",  "beige" )
+
 }
 
 function createStreamGraph() {
