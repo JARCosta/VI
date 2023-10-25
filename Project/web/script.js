@@ -8,7 +8,7 @@ var histogramData;
 
 var year_range = [2010, 2019];
 
-const AQIcolorScale = d3.interpolateRgbBasis(["lightgreen", "yellow", "red"]);
+const AQIcolorScale = d3.interpolateRgbBasis(["lightgreen", "yellow", "orange"]);
 
 var parallelColorScale;
 
@@ -327,7 +327,7 @@ function createChoroplethMap() {
     .attr("stroke-width", 0.25)
     .attr("fill-opacity", 0.5)
     .attr("fill", "#fff0db")
-    .on("click", handleMouseClick)
+    .on("click", function () { handleMouseClick; applyFilters();})
     ;
   mapGroup
     .selectAll(".country")
@@ -919,7 +919,12 @@ function createParallelCoordinates() {
 }
 
 function createTreeMap() {
-  const currentData = getCountryAverageData(filteredData.filter(d => d["Age-standardized"] != ".."));
+  var currentData = getCountryAverageData(filteredData.filter(d => d["Age-standardized"] != ".."));
+  // currentData.forEach((element) => {
+  //   if(element.Country == "United States of America"){
+  //     element.Country = "United States";
+  //   }
+  // });
   // console.log(currentData);
 
   // set the dimensions and margins of the graph
@@ -948,7 +953,7 @@ function createTreeMap() {
   // temp["children"] = currentData.filter(d =>  {d["Age-standardized"] != ".."; console.log(d.Continent)});
 
   // Give the data to this cluster layout:
-  const root = d3.hierarchy(temp).sum(function(d){ return d.GDP**0.75}) // Here the size of each leave is given in the 'value' field in input data
+  const root = d3.hierarchy(temp).sum(function(d){ return d.GDP**1}) // Here the size of each leave is given in the 'value' field in input data
   // console.log(["real", currentData, temp, root]);
   
 
@@ -961,7 +966,7 @@ function createTreeMap() {
 
   // Then d3.treemap computes the position of each element of the hierarchy
   d3.treemap()
-    // .tile(d3.treemapBinary)
+    .tile(d3.treemapBinary)
     .size([width, height])
     .paddingTop(5)
     .paddingRight(5)
@@ -1017,7 +1022,7 @@ function createTreeMap() {
       // .style("fill", function(d){ return color(d.data.Continent)} )
       // .style("opacity", function(d){ return opacity(d.data.GDP**0.2)})
       
-      .style("fill", function(d){ return (d3.interpolateRgbBasis(["white", "red"])(opacity(d.data["Age-standardized"]**0.5) )) } )
+      .style("fill", function(d){ return (d3.interpolateRgbBasis(["beige", "#a20"])(opacity(d.data["Age-standardized"]**0.5) )) } )
 
       // .text(function(d){ return (d.data.Country + " " + d.data.Continent) })
       .on("mouseover", (event, d) => {
@@ -1039,20 +1044,41 @@ function createTreeMap() {
         tooltipContainer.selectAll("table").remove();
       })
       .on("click", handleMouseClick)
-      ;
 
+
+  function countryToSize(d) {
+    const width = (d.x1 - d.x0)**0.5;
+    const height = (d.y1 - d.y0)**0.5;
+
+    const width_ratio = width /// d.data.Country.length;
+
+    const res = width_ratio * height * 0.13;
+
+    if(d.data.Country == "United States" || d.data.Country == "Canada"){
+      console.log([d.data.Country, width_ratio, height, res]);
+    }
+
+    return res;
+
+    
+  }
   // and to add the text labels
-  svg
+  squares
     .selectAll("text")
     .data(root.leaves())
     .enter()
     .append("text")
-      .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
-      .attr("y", function(d){ return d.y0+9})    // +20 to adjust position (lower)
-      // .text(function(d){ return d.data.Country })
+      .attr("x", function(d){ return d.x0})    // +10 to adjust position (more right)
+      .attr("y", function(d){ return d.y0 + 10 + (countryToSize(d))/1.3})    // +20 to adjust position (lower)
+      .text(function(d){ 
+        if((countryToSize(d)) > 7){
+          if (d.data.Country == "United States of America") return "United States";
+          return d.data.Country; 
+        } else return ""
+      })
       // .attr("aaa", function(d){ return d.data["Age-standardized"] })
-      .attr("font-size", d => 11/*(((d.x1-d.x0) /12) * ((d.y1-d.y0) /12))*/)
-      .attr("fill", "beige")
+      .attr("font-size", d => (countryToSize(d)) + "px")
+      .attr("fill", "#620")
 
   // and to add the text labels
   svg
@@ -1155,11 +1181,15 @@ const svg = d3.select("#streamGraph")
   // Customization
   svg.selectAll(".tick line").attr("stroke", "#b8b8b8")
 
+  svg.selectAll("text")
+    .attr("fill", "beige")
+
   // Add X axis label:
   svg.append("text")
       .attr("text-anchor", "end")
-      .attr("x", width)
-      .attr("y", height-30 )
+      .attr("x", width/2)
+      .attr("y", height-50 )
+      .attr("fill", "beige")
       .text("Time (year)");
 
   // Add Y axis
@@ -1167,10 +1197,16 @@ const svg = d3.select("#streamGraph")
     .domain([-d3.max(data, d => d3.sum(keys, k => +d[k])), d3.max(data, d => d3.sum(keys, k => +d[k]))])
     .range([ height, 0 ]);
 
+  var temp = d3.schemeSet3;
+  temp[5] = "#d9f";
+  temp = ["#F2D2BD", "#FF7F50", "#F88379", "#AA336A", "#FFB6C1", "#F3CFC6", "#FAA0A0", "#A95C68"];  
+
   // color palette
   const color = d3.scaleOrdinal()
     .domain(keys)
-    .range(d3.schemeSet3);
+    .range(temp /* schemeSet3  schemePastel1 */);
+
+  // console.log(d3.schemeSet3);
   
   const colorLegend =  svg.append("g")
     .attr("class", "colorLegend")
@@ -1180,7 +1216,7 @@ const svg = d3.select("#streamGraph")
   keys.forEach((key, i) => {
     colorLegend
       .append("rect")
-      .attr("y", count * 20)
+      .attr("y", count * 24 + 90)
       .attr("width", 10)
       .attr("height", 10)
       .attr("fill", color(key))
@@ -1188,8 +1224,12 @@ const svg = d3.select("#streamGraph")
   
     colorLegend.append("text")
       .attr("x", 15)
-      .attr("y", count * 20 + 10)
+      .attr("y", count * 24 + 100)
+      .attr("fill", "beige")
+      .attr("class", "myArea")
+      .attr("id", function (d) { return key })
       .text(keys[i].replace(/_/g, ' '));
+      
     
     count--;
   });
@@ -1201,29 +1241,23 @@ const svg = d3.select("#streamGraph")
     .keys(keys)
     (data)
 
-  // create a tooltip
-  const Tooltip = svg
-    .append("text")
-    .attr("x", 0)
-    .attr("y", 0)
-    .style("opacity", 0)
-    .style("font-size", 17)
-
   // Three function that change the tooltip when user hover / move / leave a cell
   const mouseover = function(event,d) {
-    Tooltip.style("opacity", 1)
     d3.selectAll(".myArea").style("opacity", .2)
-    d3.select(this)
-      .style("stroke", "black")
+    d3.selectAll(".myArea").style("opacity", .2)
+    d3.selectAll("#"+d.key)
+      // .style("stroke", "black")
       .style("opacity", 1)
+      
   }
   const mousemove = function(event,d,i) {
     grp = d.key
-    Tooltip.text(grp)
   }
   const mouseleave = function(event,d) {
-    Tooltip.style("opacity", 0)
+    d3.selectAll("#"+d.key).style("opacity", 1).style("stroke", "none")
+    d3.selectAll("#"+d.key).style("stroke", "none").style("opacity", 1)
     d3.selectAll(".myArea").style("opacity", 1).style("stroke", "none")
+    d3.selectAll(".myArea").style("stroke", "none").style("opacity", 1)
    }
 
   // Area generator
@@ -1238,6 +1272,7 @@ const svg = d3.select("#streamGraph")
     .data(stackedData)
     .join("path")
       .attr("class", "myArea")
+      .attr("id", function (d) { return d.key })
       .style("fill", function(d) { return color(d.key); })
       .attr("d", area)
       .on("mouseover", mouseover)
