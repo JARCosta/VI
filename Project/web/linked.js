@@ -7,8 +7,10 @@ function handleMouseClick(event, item) {
 
     if(country_selection[item.properties.name] != true) {
       country_selection[item.properties.name] = true;
+      country_selection.length += 1;
     } else {
       country_selection[item.properties.name] = false;
+      country_selection.length -= 1;
     }
   } else if (item.data != undefined) {
     // console.log(item.data)
@@ -69,5 +71,7 @@ function handleMouseClick(event, item) {
     })
   
   applyFilters();
+  d3.selectAll("#streamGraph").select("svg").remove();
+  createStreamGraph();
 
 }

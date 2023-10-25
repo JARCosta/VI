@@ -3,7 +3,7 @@ var globalDataCountries;
 var globalData;
 var filteredData;
 var country_selection = [];
-var applyFilters;
+var applyFilters, selected;
 var histogramData;
 
 var year_range = [2010, 2019];
@@ -162,16 +162,18 @@ function createLineShart() {
   var filters = {};
   // console.log(currentData);
 
+  const width = 585;
+
   const svg = d3
     .select("#lineChart")
     .append("svg")
-    .attr("width", 820)
+    .attr("width", width + 20)
     .attr("height", 40)
     ;
   
   const xScale = d3.scaleLinear()
     .domain([d3.min(currentData, (d) => d.Year), d3.max(currentData, (d) => d.Year)])
-    .range([15, 800]);
+    .range([15, width]);
   
   const yScale = d3.scaleLinear()
     .domain([d3.min(currentData, (d) => d["Total_Emissions"]), d3.max(currentData, (d) => d["Total_Emissions"])])
@@ -254,6 +256,8 @@ function createLineShart() {
 function createChoroplethMap() {
   currentData = getCountryAverageData(filteredData);
 
+  const width = 300;
+
   if(!choroLegendCreated){ 
     // Create a title for the choropleth map
     const chartTitle = d3
@@ -269,15 +273,16 @@ function createChoroplethMap() {
   const svg = d3
     .select("#choropleth")
     .append("svg")
-    .attr("width", width*1.6 + margin.left + margin.right)
-    .attr("height", height+26 + margin.bottom)
+    .attr("width", width*1.5 + margin.left + margin.right)
+    .attr("height", height*1.2 + margin.bottom)
     // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
+    // .attr("style", `scale: 1.5`)
     ;
 
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
-    .attr("transform", `translate(${margin.left*0},-${margin.top*0})`)
-    .attr("style", `scale: 1.5`)
+    .attr("transform", `translate(12.5, -100) scale(1.75)`)
+    // .attr("style", `scale: 1.5`)
   ;
 
   // Create a color scale for the Total values
@@ -390,15 +395,17 @@ function createChoroplethMap() {
   // Create zoom behavior for the map
   const zoom = d3
     .zoom()
-    .scaleExtent([1, 8])
-    // .translateExtent([
-    //   [0, width],
-    //   [height*1.8, 0],
-    // ])
+    .scaleExtent([1.75, 8])
+    .translateExtent([
+      [0, 0],
+      [width, height],
+    ])
     .on("zoom", zoomed);
 
   // Apply zoom behavior to the SVG element
   svg.call(zoom);
+
+  // mapGroup.attr("transform", "translate(12.5, -100) scale(1.75)")
 
   // Function to handle the zoom event
   function zoomed(event) {
@@ -728,7 +735,7 @@ function createParallelCoordinates() {
     }
   }
     
-  const selected = function (d) {
+  selected = function (d) {
 
     if(d.properties != undefined){
       var country = d.properties.name;
@@ -913,11 +920,11 @@ function createParallelCoordinates() {
 
 function createTreeMap() {
   const currentData = getCountryAverageData(filteredData.filter(d => d["Age-standardized"] != ".."));
-  console.log(currentData);
+  // console.log(currentData);
 
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 10, bottom: 10, left: 10},
-    width = 445+100 - margin.left - margin.right,
+    width = 445+190 - margin.left - margin.right,
     height = 445+75 - margin.top - margin.bottom;
 
   // append the svg object to the body of the page
@@ -932,7 +939,7 @@ function createTreeMap() {
 
   const temp = [];
   temp["children"] = [];
-  const  continents = ["North America", "South America", "Europe", "Asia", "Africa", "Oceania"];
+  const  continents = ["North America", "South America", "Africa", "Europe", "Oceania", "Asia"];
   for (const i in continents) {
     temp["children"][temp["children"].length] = [];
     temp["children"][temp["children"].length-1]["children"] = currentData.filter(d => d["Age-standardized"] != ".." && d.Continent == continents[i]);
@@ -942,7 +949,7 @@ function createTreeMap() {
 
   // Give the data to this cluster layout:
   const root = d3.hierarchy(temp).sum(function(d){ return d.GDP**0.75}) // Here the size of each leave is given in the 'value' field in input data
-  console.log(["real", currentData, temp, root]);
+  // console.log(["real", currentData, temp, root]);
   
 
   // read json data
@@ -954,10 +961,10 @@ function createTreeMap() {
 
   // Then d3.treemap computes the position of each element of the hierarchy
   d3.treemap()
-    .tile(d3.treemapBinary)
+    // .tile(d3.treemapBinary)
     .size([width, height])
-    .paddingTop(28)
-    .paddingRight(7)
+    .paddingTop(5)
+    .paddingRight(5)
     .paddingInner(1)      // Padding between each rectangle
     //.paddingOuter(6)
     //.padding(20)
@@ -987,10 +994,14 @@ function createTreeMap() {
     .style("border-width", "2px")
     ;
 
+  const squares = svg
+    .append('g')
+    .attr("transform", "translate(0,20)")
+
 
 
   // use this information to add rectangles:
-  svg
+  squares
     .selectAll("rect")
     .data(root.leaves())
     .join("rect")
@@ -1017,7 +1028,7 @@ function createTreeMap() {
           .style("top", (event.pageY) + "px")
           .append("table");
         tr.append("tr")
-          .text(d.data.Country);
+          .text(d.data.Country + ", " + d.data.Continent);
         tr.append("tr")
           .text("GDP: " + (d.data.GDP / 1000000000000 > 1 ?  d3.format(".1f")(d.data.GDP / 1000000000000) + "B" : d3.format(".1f")(d.data.GDP / 1000000) + "M"));
         tr.append("tr")
@@ -1055,17 +1066,17 @@ function createTreeMap() {
       .attr("font-size", "11px")
       .attr("fill", "beige")
 
-  // Add title for the 3 groups
-  svg
-    .selectAll("titles")
-    .data(root.descendants().filter(function(d){return d.depth==1}))
-    .enter()
-    .append("text")
-      .attr("x", function(d){ return d.x0})
-      .attr("y", function(d){ return d.y0+21})
-      .text(function(d){ return d.data.name })
-      .attr("font-size", "19px")
-      .attr("fill",  function(d){ return color(d.data.name)} )
+  // // Add title for the 3 groups
+  // svg
+  //   .selectAll("titles")
+  //   .data(root.descendants().filter(function(d){return d.depth==1}))
+  //   .enter()
+  //   .append("text")
+  //     .attr("x", function(d){ return d.x0})
+  //     .attr("y", function(d){ return d.y0+21})
+  //     .text(function(d){ return d.data.name })
+  //     .attr("font-size", "19px")
+  //     .attr("fill",  function(d){ return color(d.data.name)} )
 
   // Add title for the 3 groups
   svg
@@ -1087,25 +1098,59 @@ const margin = {top: 20, right: 30, bottom: 0, left: 10},
 // append the svg object to the body of the page
 const svg = d3.select("#streamGraph")
   .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
   .append("g")
-    .attr("transform",
-          `translate(${margin.left}, ${margin.top})`);
+  .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-// Parse the Data
-d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/5_OneCatSevNumOrdered_wide.csv").then(function(data) {
+  
+  
+  
+  // // Parse the Data
+  // d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/5_OneCatSevNumOrdered_wide.csv").then(function(data) {
+    
+  // // List of groups = header of the csv files
+  // var keys = data.columns.slice(1)
+  // console.log(["test", data]);
+    
+  var keys = ["Agriculture", "Waste", "Industry", "Manufacturing_and_construction", "Transport", "Electricity_and_heat", "Buildings", "Fugitive_emissions", "Other_fuel_combustion", "Aviation_and_shipping"]
 
-  // List of groups = header of the csv files
-  const keys = data.columns.slice(1)
+  const convert = function(data) {
+    years = [];
+    data.forEach((element) => {
+      const year = element.Year - year_range[0];
+      if(years[year] == undefined){
+        years[year] = {"Year": element.Year};
+        keys.forEach((key) => {
+          years[year][key] = 0;
+        });
+        years[year]["countries"] = [];
+      }
+      keys.forEach((key) => {
+        if(element[key] != ".." && (country_selection.length == 0 || country_selection[element.Country] == true)){
+          // console.log(element.Country);
+          // console.log([country_selection.length == 0, country_selection[element.Country] == true])
+          years[year][key] += element[key] * (year+20)*0.04;
+          years[year]["countries"].push(element.Country);
+        }
+      });
+    });
+    return years;
+  }
+
+  data = convert(filteredData);
+  data["columns"] = keys;
+  
+  // console.log(["real", data, country_selection]);
 
   // Add X axis
   const x = d3.scaleLinear()
-    .domain(d3.extent(data, function(d) { return d.year; }))
-    .range([ 0, width ]);
+    .domain(year_range)
+    .range([ width*0.01, width*0.8 ]);
   svg.append("g")
     .attr("transform", `translate(0, ${height*0.8})`)
-    .call(d3.axisBottom(x).tickSize(-height*.7).tickValues([1900, 1925, 1975, 2000]))
+    // .call(d3.format(".0f")(x).tickSize(-height*0.6).tickFormat(""))
+    .call(d3.axisBottom(x).tickSize(-height*.7).tickValues([2010,2011,2012,2013,2014,2015,2015,2016,2017,2018,2019]).tickFormat(d3.format(".0f")))
     .select(".domain").remove()
   // Customization
   svg.selectAll(".tick line").attr("stroke", "#b8b8b8")
@@ -1119,13 +1164,36 @@ d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_data
 
   // Add Y axis
   const y = d3.scaleLinear()
-    .domain([-100000, 100000])
+    .domain([-d3.max(data, d => d3.sum(keys, k => +d[k])), d3.max(data, d => d3.sum(keys, k => +d[k]))])
     .range([ height, 0 ]);
 
   // color palette
   const color = d3.scaleOrdinal()
     .domain(keys)
-    .range(d3.schemeDark2);
+    .range(d3.schemeSet3);
+  
+  const colorLegend =  svg.append("g")
+    .attr("class", "colorLegend")
+    .attr("transform", `translate(${width*0.81}, 0)`);
+
+  var count = keys.length;
+  keys.forEach((key, i) => {
+    colorLegend
+      .append("rect")
+      .attr("y", count * 20)
+      .attr("width", 10)
+      .attr("height", 10)
+      .attr("fill", color(key))
+      ;
+  
+    colorLegend.append("text")
+      .attr("x", 15)
+      .attr("y", count * 20 + 10)
+      .text(keys[i].replace(/_/g, ' '));
+    
+    count--;
+  });
+
 
   //stack the data?
   const stackedData = d3.stack()
@@ -1160,7 +1228,7 @@ d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_data
 
   // Area generator
   const area = d3.area()
-    .x(function(d) { return x(d.data.year); })
+    .x(function(d) { return x(d.data.Year); })
     .y0(function(d) { return y(d[0]); })
     .y1(function(d) { return y(d[1]); })
 
@@ -1176,5 +1244,5 @@ d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_data
       .on("mousemove", mousemove)
       .on("mouseleave", mouseleave)
 
-})
+// })
 }

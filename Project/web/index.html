@@ -12,7 +12,7 @@
 
             .dashboard {
                 display: grid;
-                grid-template-columns: 1.3fr 1fr 1fr;
+                grid-template-columns: 0fr 1fr 1fr;
                 grid-template-rows: 0fr 1fr;
                 /* grid-template-columns: 1fr 1fr; */
 
@@ -38,15 +38,11 @@
             .container2 {
                 grid-area: parallel;
             }
-            #streamGraph {
+            .container3 {
                 grid-area: stream;
-                /* width: fit-content;
-                height: fit-content; */
             }
-            #treeMap {
+            .container4 {
                 grid-area: tree;
-                /* width: fit-content;
-                height: fit-content; */
             }
             #choroplethTitle {
                 text-align: center;
@@ -63,6 +59,7 @@
     <body onload="startDashboard()" style="background-color: #54738C;">
         <div class="dashboard">
             <div class="visualization" id="lineChart" style="background-color: #fff1;"></div>
+            
             <div class="container1" style="background-color: #fff1; width: -webkit-fill-available;">
                 <div >
                     <div id="choroplethTitle"></div>
@@ -70,17 +67,24 @@
                 </div>
                 <div class="visualization" id="choroplethLabel"></div>
             </div>
-
+            
             <div class="container2" style="background-color: #fff1; width: fit-content;">
                 <div >
                     <div id="parallelCoordinatesTitle"></div>
                     <div class="visualization" id="parallelCoordinates"></div>
                 </div>
             </div>
+            
+            <div class="container3" style="background-color: #fff1; width: fit-content;">
+                <div class="visualization" id="streamGraph"></div>
+            </div>
+            
+            <div class="container4" style="background-color: #fff1; width: fit-content;">
+                <div class="visualization" id="treeMap"></div>
+                <div class="visualization" id="treeMapLabel"></div>
+            </div>
 
-            <!-- <div class="visualization" id="parallelCoordinates" style="background-color: #fff1;"></div> -->
-            <div class="visualization" id="streamGraph" style="background-color: #fff1;"></div>
-            <div class="visualization" id="treeMap" style="background-color: #fff1;"></div>
+
         </div>
     </body>
 </html>
