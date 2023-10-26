@@ -1228,7 +1228,7 @@ const svg = d3.select("#streamGraph")
         if(element[key] != ".." && (country_selection.length == 0 || country_selection[element.Country] == true)){
           // console.log(element.Country);
           // console.log([country_selection.length == 0, country_selection[element.Country] == true])
-          years[year][key] += element[key] * (year+20)*0.04;
+          years[year][key] += element[key];// * (year+20)*0.04;
           years[year]["countries"].push(element.Country);
         }
       });
@@ -1271,6 +1271,7 @@ const svg = d3.select("#streamGraph")
   // Add Y axis
   const y = d3.scaleLinear()
     .domain([-d3.max(data, d => d3.sum(keys, k => +d[k])), d3.max(data, d => d3.sum(keys, k => +d[k]))])
+    .domain([-100000000000, 100000000000])
     .range([ height, 0 ]);
 
   var temp = d3.schemeSet3;
