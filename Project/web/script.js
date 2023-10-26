@@ -15,6 +15,7 @@ var parallelColorScale;
 
 var choroLegendCreated = false;
 var paralellLegendCreated = false;
+var treeLegendCreated = false;
 
 // Define margin and dimensions for the charts
 const margin = {
@@ -157,7 +158,16 @@ function getYearAverageData(data) {
 
 
 function createLineShart() {
-  currentData = getYearAverageData(globalData)
+  var tempData;
+  if(country_selection.length != 0){
+    tempData = globalData.filter(d => country_selection[d.Country] == true);
+  } else {
+    tempData = globalData;
+  }
+  tempData = getYearAverageData(tempData)
+
+
+  console.log(tempData);
 
   var filters = {};
   // console.log(currentData);
@@ -172,11 +182,11 @@ function createLineShart() {
     ;
   
   const xScale = d3.scaleLinear()
-    .domain([d3.min(currentData, (d) => d.Year), d3.max(currentData, (d) => d.Year)])
+    .domain([d3.min(tempData, (d) => d.Year), d3.max(tempData, (d) => d.Year)])
     .range([15, width]);
   
   const yScale = d3.scaleLinear()
-    .domain([d3.min(currentData, (d) => d["Total_Emissions"]), d3.max(currentData, (d) => d["Total_Emissions"])])
+    .domain([d3.min(tempData, (d) => d["Total_Emissions"]), d3.max(tempData, (d) => d["Total_Emissions"])])
     .range([30, 3]);
   
   const line = d3.line()
@@ -189,7 +199,7 @@ function createLineShart() {
     .append("g")
     .attr("class", "line")
     .append("path")
-    .datum(currentData)
+    .datum(tempData)
     .attr("class", "line")
     .attr("d", line)
     .attr("stroke", "beige")
@@ -201,7 +211,7 @@ function createLineShart() {
     .append("g")
     .attr("class", "years")
     .selectAll("text")
-    .data(currentData)
+    .data(tempData)
     .enter()
     .append("text")
     .attr("x", (d) => xScale(d.Year))
@@ -273,7 +283,7 @@ function createChoroplethMap() {
   const svg = d3
     .select("#choropleth")
     .append("svg")
-    .attr("width", width*1.5 + margin.left + margin.right)
+    .attr("width", width*1.45 + margin.left + margin.right)
     .attr("height", height*1.2 + margin.bottom)
     // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     // .attr("style", `scale: 1.5`)
@@ -420,6 +430,7 @@ function createChoroplethMap() {
       .append("svg")
       .attr("width", width * 0.15)
       .attr("height", height)
+      .attr("transform", `translate(10, 0)`);
       ;
 
     // Create a gradient for the legend color scale
@@ -699,6 +710,8 @@ function createParallelCoordinates() {
 
     // console.log(averageData.filter( d => d.selected == true));
 
+    d3.select("#streamGraph").selectAll("svg").remove();
+    createStreamGraph();
 
     
     var counter = 1;
@@ -929,7 +942,7 @@ function createTreeMap() {
 
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 10, bottom: 10, left: 10},
-    width = 445+190 - margin.left - margin.right,
+    width = 445+125 - margin.left - margin.right,
     height = 445+75 - margin.top - margin.bottom;
 
   // append the svg object to the body of the page
@@ -985,6 +998,65 @@ function createTreeMap() {
     .domain([d3.min(currentData, (d) => d["Age-standardized"])**0.5, d3.max(currentData, (d) => d["Age-standardized"])**0.5])
     .range([0,1])
 
+
+    if (!treeLegendCreated) {
+      // Create a legend for the choropleth map
+      const svg2 = d3
+        .select("#treeMapLabel")
+        .style("position", "relative")
+        .append("svg")
+        .attr("width", width * 0.1)
+        .attr("height", height)
+        ;
+  
+      // Create a gradient for the legend color scale
+      const defs = svg2.append("defs");
+      const gradient = defs
+        .append("linearGradient")
+        .attr("id", "colorScaleGradient2")
+        .attr("x1", "0%")
+        .attr("y1", "0%")
+        .attr("x2", "0%")
+        .attr("y2", "100%");
+  
+      gradient
+        .append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", d3.interpolateRgbBasis(["beige", "#a20"])(1));
+        
+      gradient
+      .append("stop")
+      .attr("offset", "50%")
+      .attr("stop-color", d3.interpolateRgbBasis(["beige", "#a20"])(0.5));
+      
+      gradient
+      .append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", d3.interpolateRgbBasis(["beige", "#a20"])(0));
+  
+      // Create the legend rectangle filled with the color scale gradient
+      const legend = svg2.append("g").attr("transform", `translate(0, 40)`);
+      const legendHeight = height - 40;
+      const legendWidth = 20;
+  
+      legend
+        .append("rect")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#colorScaleGradient2)");
+      
+      // Add tick marks and labels to the legend
+      for (let index = 0; index <= 1; index += 0.25) {
+        legend
+          .append("text")
+          .attr("x", legendWidth + 5)
+          .attr("y", legendHeight * (1-index) * 0.955 + 12)
+          .style("fill", "beige")
+          .text(Math.round(opacity.invert(index)**2));
+      }
+    }
+    treeLegendCreated = true;
+  
 
 
   // add tooltip
@@ -1055,7 +1127,7 @@ function createTreeMap() {
     const res = width_ratio * height * 0.13;
 
     if(d.data.Country == "United States" || d.data.Country == "Canada"){
-      console.log([d.data.Country, width_ratio, height, res]);
+      // console.log([d.data.Country, width_ratio, height, res]);
     }
 
     return res;
@@ -1164,7 +1236,11 @@ const svg = d3.select("#streamGraph")
     return years;
   }
 
-  data = convert(filteredData);
+  const tempData =  filteredData.filter(d => selected(d))
+
+  
+  data = convert(tempData);
+  // console.log(["test", data]);
   data["columns"] = keys;
   
   // console.log(["real", data, country_selection]);
@@ -1241,13 +1317,37 @@ const svg = d3.select("#streamGraph")
     .keys(keys)
     (data)
 
+  const tooltipContainer = d3
+    .select("#streamGraph")
+    .append("div")
+    .attr("class", "tooltip")
+    .style("background-color", "beige")
+    .style("opacity", 0)
+    .style("position", "absolute")
+    .style("border", "solid")
+    .style("border-width", "2px")
+    ;
+
   // Three function that change the tooltip when user hover / move / leave a cell
   const mouseover = function(event,d) {
     d3.selectAll(".myArea").style("opacity", .2)
     d3.selectAll(".myArea").style("opacity", .2)
     d3.selectAll("#"+d.key)
       // .style("stroke", "black")
-      .style("opacity", 1)
+      .style("opacity", 1);
+    tooltipContainer.transition().duration(200).style("opacity", 0.9);
+    const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
+      .style("left", (event.pageX + 28) + "px")
+      .style("top", (event.pageY) + "px")
+      .append("table");
+    tr.append("tr")
+      .text(d.key.replace(/_/g, ' '));
+    tr.append("tr")
+      .text(year_range[0] + ": " + d[0].data[d.key]);
+    tr.append("tr")
+      .text( year_range[1] + ": " + d[d.length-1].data[d.key]);
+    
+    
       
   }
   const mousemove = function(event,d,i) {
@@ -1258,6 +1358,9 @@ const svg = d3.select("#streamGraph")
     d3.selectAll("#"+d.key).style("stroke", "none").style("opacity", 1)
     d3.selectAll(".myArea").style("opacity", 1).style("stroke", "none")
     d3.selectAll(".myArea").style("stroke", "none").style("opacity", 1)
+    tooltipContainer.transition().duration(500).style("opacity", 0);
+    tooltipContainer.selectAll("table").remove();
+
    }
 
   // Area generator
@@ -1278,6 +1381,24 @@ const svg = d3.select("#streamGraph")
       .on("mouseover", mouseover)
       .on("mousemove", mousemove)
       .on("mouseleave", mouseleave)
+      // .on("mouseover", (event, d) => {
+      //   // console.log(d);
+      //   tooltipContainer.transition().duration(200).style("opacity", 0.9);
+      //   const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
+      //     .style("left", (event.pageX + 28) + "px")
+      //     .style("top", (event.pageY) + "px")
+      //     .append("table");
+      //   tr.append("tr")
+      //     .text(element.Country);
+      //   if (element.Total > 0) {
+      //     tr.append("tr")
+      //       .text("AQI index: " + element.Total.toFixed(1));
+      //   }
+      // })
+      // .on("mouseout", () => {
+      //   tooltipContainer.transition().duration(500).style("opacity", 0);
+      //   tooltipContainer.selectAll("table").remove();
+      // })
 
 // })
 }

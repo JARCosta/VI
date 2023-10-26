@@ -16,8 +16,10 @@ function handleMouseClick(event, item) {
     // console.log(item.data)
     if(country_selection[item.data.Country] != true) {
       country_selection[item.data.Country] = true;
+      country_selection.length += 1;
     } else {
       country_selection[item.data.Country] = false;
+      country_selection.length -= 1;
     }
   }
 
@@ -71,7 +73,11 @@ function handleMouseClick(event, item) {
     })
   
   applyFilters();
+
   d3.selectAll("#streamGraph").select("svg").remove();
   createStreamGraph();
+
+  d3.selectAll("#lineChart").select("svg").remove();
+  createLineShart();
 
 }
