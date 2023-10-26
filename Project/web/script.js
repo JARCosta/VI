@@ -1215,6 +1215,7 @@ const svg = d3.select("#streamGraph")
 
   const convert = function(data) {
     years = [];
+    var count = 0;
     data.forEach((element) => {
       const year = element.Year - year_range[0];
       if(years[year] == undefined){
@@ -1230,10 +1231,17 @@ const svg = d3.select("#streamGraph")
           // console.log([country_selection.length == 0, country_selection[element.Country] == true])
           years[year][key] += element[key];// * (year+20)*0.04;
           years[year]["countries"].push(element.Country);
+          count++;
         }
       });
     });
+    years.forEach((element) => {
+      keys.forEach((key) => {
+        element[key] /= count;
+      });
+    });
     return years;
+
   }
 
   const tempData =  filteredData.filter(d => selected(d))
@@ -1271,7 +1279,7 @@ const svg = d3.select("#streamGraph")
   // Add Y axis
   const y = d3.scaleLinear()
     .domain([-d3.max(data, d => d3.sum(keys, k => +d[k])), d3.max(data, d => d3.sum(keys, k => +d[k]))])
-    .domain([-100000000000, 100000000000])
+    .domain([-20000000, 20000000])
     .range([ height, 0 ]);
 
   var temp = d3.schemeSet3;
