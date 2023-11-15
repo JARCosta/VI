@@ -56,7 +56,6 @@ function startDashboard() {
     filteredData = globalData;
     
     // Call functions to create the choropleth map and scatter plot
-    // createYearFilter();
     createLineShart();
     createChoroplethMap();
     createParallelCoordinates();
@@ -152,7 +151,6 @@ function getYearAverageData(data) {
     });
   });
   
-  // console.log(ret);
   return ret;
 }
 
@@ -170,7 +168,6 @@ function createLineShart() {
   console.log(tempData);
 
   var filters = {};
-  // console.log(currentData);
 
   const width = 585;
 
@@ -229,15 +226,12 @@ function createLineShart() {
     .extent([[15, 0], [800, 40]])
     .on("brush", brushed)
     ;
-  
-
 
   const gBrush = svg.append("g")
     .attr("class", "brush")
     .call(brush)
     .call(brush.move, xScale.range())
     ;
-
 
   function brushed(event) {
     if (event.sourceEvent && event.sourceEvent.type === "zoom")
@@ -285,14 +279,11 @@ function createChoroplethMap() {
     .append("svg")
     .attr("width", width*1.45 + margin.left + margin.right)
     .attr("height", height*1.2 + margin.bottom)
-    // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
-    // .attr("style", `scale: 1.5`)
     ;
 
   // Create a group to hold the map elements
   const mapGroup = svg.append("g")
     .attr("transform", `translate(12.5, -100) scale(1.75)`)
-    // .attr("style", `scale: 1.5`)
   ;
 
   // Create a color scale for the Total values
@@ -381,7 +372,6 @@ function createChoroplethMap() {
         return d.properties.name == element.Country;
       })
       .on("mouseover", (event, d) => {
-        // console.log(d);
         tooltipContainer.transition().duration(200).style("opacity", 0.9);
         const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
           .style("left", (event.pageX + 28) + "px")
@@ -399,7 +389,6 @@ function createChoroplethMap() {
         tooltipContainer.selectAll("table").remove();
       })
       ;
-      // console.log(element.Total);
   });
 
   // Create zoom behavior for the map
@@ -414,8 +403,6 @@ function createChoroplethMap() {
 
   // Apply zoom behavior to the SVG element
   svg.call(zoom);
-
-  // mapGroup.attr("transform", "translate(12.5, -100) scale(1.75)")
 
   // Function to handle the zoom event
   function zoomed(event) {
@@ -547,7 +534,6 @@ function getCountryAverageData(data) {
     countries[element.Country]["Continent"] = element.Continent;
   });
 
-  // console.log(["countries",countries]);
   
   var ret = [];
   for (const country in countries) {
@@ -565,7 +551,6 @@ function getCountryAverageData(data) {
     ret.push(temp1);
   }
   
-  // console.log(["ret",ret]);
   return ret;
 }
 
@@ -602,7 +587,6 @@ function createParallelCoordinates() {
     .append("svg")
     .attr("width", width*1.55 + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    // .attr("style", "position: relative; left: 50%; transform: translateX(-50%); background-color: transparent white; width: -webkit-fill-available;")
     .append("g")
     .attr("transform", `translate(-${height*0.1},${margin.top})`)
     ;
@@ -647,7 +631,6 @@ function createParallelCoordinates() {
 
   var bins = [];
   for (const dim of dimensions) {
-    // console.log(averageData);
     bins[dim] = histogram2(averageData, dim);
   }
 
@@ -695,7 +678,6 @@ function createParallelCoordinates() {
 
     d3.selectAll('.treeMap.data')
       .style('fill-opacity', d => (selected(d) && ( country_selection[d.data.Country] == true || count_trues() == 0 ) ? 1 : 0.5))
-      // .style('stroke-width', d => (selected(d) && ( country_selection[d.data.Country] == true || count_trues() == 0 ) ? 2 : 0))
       ;
 
     averageData.forEach((element) => {
@@ -708,7 +690,6 @@ function createParallelCoordinates() {
 
     d3.selectAll(".bar.data").remove();
 
-    // console.log(averageData.filter( d => d.selected == true));
 
     d3.select("#streamGraph").selectAll("svg").remove();
     createStreamGraph();
@@ -759,13 +740,11 @@ function createParallelCoordinates() {
     } else {
       if(d.Country == undefined){
         d = d.data;
-        // console.log(d);
       }
     }
 
     const _filters = Object.entries(filters);
     return _filters.every(f => {
-      // console.log([d,f[1][1] <= d[f[0]] && d[f[0]] <= f[1][0]]);
       return f[1][1] <= d[f[0]] && d[f[0]] <= f[1][0];
     });
   }
@@ -785,13 +764,6 @@ function createParallelCoordinates() {
 
   // Create the path function
   const path = (d) => d3.line()(dimensions.map((p) => [xScale(p), yScale[p](d[p])]));
-
-
-  // console.log(bins);
-  
-
-
-
 
   // Inactive data
   svg.append('g').attr('class', 'inactive').selectAll('path')
@@ -830,7 +802,6 @@ function createParallelCoordinates() {
       
       .attr("x", (d) => xVerticalAxis2(d.x0))
       .attr("y", 0)
-      // .attr("country list", (d) => d.)
       .attr("length", (d) => d.length)
       
       .attr("width", xVerticalScale.bandwidth())
@@ -870,7 +841,6 @@ function createParallelCoordinates() {
     .attr("fill", "none")
     .style("transform", "scale(2,1)")
     .on("mouseover", (event, d) => {
-      // console.log(d);
       tooltipContainer.transition().duration(200).style("opacity", 0.9);
       const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
         .style("left", (event.pageX + 28) + "px")
@@ -927,18 +897,10 @@ function createParallelCoordinates() {
   .attr("transform", "translate(0,-25)")
   .text(d=>d);
 
-
-
 }
 
 function createTreeMap() {
   var currentData = getCountryAverageData(filteredData.filter(d => d["Age-standardized"] != ".."));
-  // currentData.forEach((element) => {
-  //   if(element.Country == "United States of America"){
-  //     element.Country = "United States";
-  //   }
-  // });
-  // console.log(currentData);
 
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 10, bottom: 10, left: 10},
@@ -953,7 +915,6 @@ function createTreeMap() {
   .append("g")
     .attr("transform",`translate(${margin.left}, ${margin.top})`);
 
-  // console.log(currentData.filter(d => {d["Age-standardized"] != ".."; console.log(d.Continent)}));
 
   const temp = [];
   temp["children"] = [];
@@ -963,19 +924,9 @@ function createTreeMap() {
     temp["children"][temp["children"].length-1]["children"] = currentData.filter(d => d["Age-standardized"] != ".." && d.Continent == continents[i]);
     temp["children"][temp["children"].length-1]["name"] = continents[i];
   }
-  // temp["children"] = currentData.filter(d =>  {d["Age-standardized"] != ".."; console.log(d.Continent)});
 
   // Give the data to this cluster layout:
-  const root = d3.hierarchy(temp).sum(function(d){ return d.GDP**1}) // Here the size of each leave is given in the 'value' field in input data
-  // console.log(["real", currentData, temp, root]);
-  
-
-  // read json data
-  // d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_dendrogram_full.json").then( function(data) {
-  //   // Give the data to this cluster layout:
-  //   const root = d3.hierarchy(data).sum(function(d){ return d.value}) // Here the size of each leave is given in the 'value' field in input data
-  //   console.log(["test", data, root]);
-  // });
+  const root = d3.hierarchy(temp).sum(function(d){ return d.GDP**1}) // Here the size of each leave is given in the 'value' field in input data  
 
   // Then d3.treemap computes the position of each element of the hierarchy
   d3.treemap()
@@ -984,13 +935,10 @@ function createTreeMap() {
     .paddingTop(5)
     .paddingRight(5)
     .paddingInner(1)      // Padding between each rectangle
-    //.paddingOuter(6)
-    //.padding(20)
     (root)
 
   // prepare a color scale
   const color = d3.scaleOrdinal()
-    // .domain(["boss1", "boss2", "boss3"])
     .range(["cyan", "red", "orange", "black", "yellow", "lightgreen"])
   
   // And a opacity scale
@@ -1090,15 +1038,10 @@ function createTreeMap() {
       .attr("aaa", function(d){ return d.data["Age-standardized"] })
       .style("stroke", "beige")
       .style("stroke-width", 0)
-
-      // .style("fill", function(d){ return color(d.data.Continent)} )
-      // .style("opacity", function(d){ return opacity(d.data.GDP**0.2)})
       
       .style("fill", function(d){ return (d3.interpolateRgbBasis(["beige", "#a20"])(opacity(d.data["Age-standardized"]**0.5) )) } )
 
-      // .text(function(d){ return (d.data.Country + " " + d.data.Continent) })
       .on("mouseover", (event, d) => {
-        // console.log(d);
         tooltipContainer.transition().duration(200).style("opacity", 0.9);
         const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
           .style("left", (event.pageX + 28) + "px")
@@ -1127,7 +1070,6 @@ function createTreeMap() {
     const res = width_ratio * height * 0.13;
 
     if(d.data.Country == "United States" || d.data.Country == "Canada"){
-      // console.log([d.data.Country, width_ratio, height, res]);
     }
 
     return res;
@@ -1148,7 +1090,6 @@ function createTreeMap() {
           return d.data.Country; 
         } else return ""
       })
-      // .attr("aaa", function(d){ return d.data["Age-standardized"] })
       .attr("font-size", d => (countryToSize(d)) + "px")
       .attr("fill", "#620")
 
@@ -1160,28 +1101,15 @@ function createTreeMap() {
     .append("text")
       .attr("x", function(d){ return d.x0+5})    // +10 to adjust position (more right)
       .attr("y", function(d){ return d.y0+35})    // +20 to adjust position (lower)
-      // .text(function(d){ return d.data["Age-standardized"] })
       .attr("font-size", "11px")
       .attr("fill", "beige")
-
-  // // Add title for the 3 groups
-  // svg
-  //   .selectAll("titles")
-  //   .data(root.descendants().filter(function(d){return d.depth==1}))
-  //   .enter()
-  //   .append("text")
-  //     .attr("x", function(d){ return d.x0})
-  //     .attr("y", function(d){ return d.y0+21})
-  //     .text(function(d){ return d.data.name })
-  //     .attr("font-size", "19px")
-  //     .attr("fill",  function(d){ return color(d.data.name)} )
 
   // Add title for the 3 groups
   svg
     .append("text")
       .attr("x", 0)
       .attr("y", 14)    // +20 to adjust position (lower)
-      .text("GDP and deaths caused by air pollution per country")
+      .text("GDP and deaths caused by respiratory diseases per country.")
       .attr("font-size", "19px")
       .attr("fill",  "beige" )
 
@@ -1200,16 +1128,6 @@ const svg = d3.select("#streamGraph")
   .attr("height", height + margin.top + margin.bottom)
   .append("g")
   .attr("transform", `translate(${margin.left}, ${margin.top})`);
-
-  
-  
-  
-  // // Parse the Data
-  // d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/5_OneCatSevNumOrdered_wide.csv").then(function(data) {
-    
-  // // List of groups = header of the csv files
-  // var keys = data.columns.slice(1)
-  // console.log(["test", data]);
     
   var keys = ["Agriculture", "Waste", "Industry", "Manufacturing_and_construction", "Transport", "Electricity_and_heat", "Buildings", "Fugitive_emissions", "Other_fuel_combustion", "Aviation_and_shipping"]
 
@@ -1227,8 +1145,6 @@ const svg = d3.select("#streamGraph")
       }
       keys.forEach((key) => {
         if(element[key] != ".." && (country_selection.length == 0 || country_selection[element.Country] == true)){
-          // console.log(element.Country);
-          // console.log([country_selection.length == 0, country_selection[element.Country] == true])
           years[year][key] += element[key];// * (year+20)*0.04;
           years[year]["countries"].push(element.Country);
           count++;
@@ -1248,10 +1164,8 @@ const svg = d3.select("#streamGraph")
 
   
   data = convert(tempData);
-  // console.log(["test", data]);
   data["columns"] = keys;
   
-  // console.log(["real", data, country_selection]);
 
   // Add X axis
   const x = d3.scaleLinear()
@@ -1259,7 +1173,6 @@ const svg = d3.select("#streamGraph")
     .range([ width*0.01, width*0.8 ]);
   svg.append("g")
     .attr("transform", `translate(0, ${height*0.8})`)
-    // .call(d3.format(".0f")(x).tickSize(-height*0.6).tickFormat(""))
     .call(d3.axisBottom(x).tickSize(-height*.7).tickValues([2010,2011,2012,2013,2014,2015,2015,2016,2017,2018,2019]).tickFormat(d3.format(".0f")))
     .select(".domain").remove()
   // Customization
@@ -1279,7 +1192,6 @@ const svg = d3.select("#streamGraph")
   // Add Y axis
   const y = d3.scaleLinear()
     .domain([-d3.max(data, d => d3.sum(keys, k => +d[k])), d3.max(data, d => d3.sum(keys, k => +d[k]))])
-    // .domain([-20000000, 20000000])
     .range([ height, 0 ]);
 
   var temp = d3.schemeSet3;
@@ -1289,9 +1201,8 @@ const svg = d3.select("#streamGraph")
   // color palette
   const color = d3.scaleOrdinal()
     .domain(keys)
-    .range(temp /* schemeSet3  schemePastel1 */);
+    .range(temp);
 
-  // console.log(d3.schemeSet3);
   
   const colorLegend =  svg.append("g")
     .attr("class", "colorLegend")
@@ -1320,7 +1231,7 @@ const svg = d3.select("#streamGraph")
   });
 
 
-  //stack the data?
+
   const stackedData = d3.stack()
     .offset(d3.stackOffsetSilhouette)
     .keys(keys)
@@ -1342,10 +1253,9 @@ const svg = d3.select("#streamGraph")
     d3.selectAll(".myArea").style("opacity", .2)
     d3.selectAll(".myArea").style("opacity", .2)
     d3.selectAll("#"+d.key)
-      // .style("stroke", "black")
       .style("opacity", 1);
     tooltipContainer.transition().duration(200).style("opacity", 0.9);
-    const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
+    const tr = tooltipContainer
       .style("left", (event.pageX + 28) + "px")
       .style("top", (event.pageY) + "px")
       .append("table");
@@ -1390,24 +1300,12 @@ const svg = d3.select("#streamGraph")
       .on("mouseover", mouseover)
       .on("mousemove", mousemove)
       .on("mouseleave", mouseleave)
-      // .on("mouseover", (event, d) => {
-      //   // console.log(d);
-      //   tooltipContainer.transition().duration(200).style("opacity", 0.9);
-      //   const tr = tooltipContainer//.html(d.properties.name + "\n aaa")
-      //     .style("left", (event.pageX + 28) + "px")
-      //     .style("top", (event.pageY) + "px")
-      //     .append("table");
-      //   tr.append("tr")
-      //     .text(element.Country);
-      //   if (element.Total > 0) {
-      //     tr.append("tr")
-      //       .text("AQI index: " + element.Total.toFixed(1));
-      //   }
-      // })
-      // .on("mouseout", () => {
-      //   tooltipContainer.transition().duration(500).style("opacity", 0);
-      //   tooltipContainer.selectAll("table").remove();
-      // })
 
-// })
+  svg
+    .append("text")
+      .attr("x", 0)
+      .attr("y", 14)
+      .text("Greenhouse gas emissions by sector (in tons)")
+      .attr("font-size", "19px")
+      .attr("fill",  "beige" )
 }
